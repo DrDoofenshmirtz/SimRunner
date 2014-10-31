@@ -1,0 +1,11 @@
+/lib/**
+/out/**
+/classes/**
+/target/**
+*.class
+*.iml
+*.ipr
+*.iws
+.lein-repl-history
+*~
+
