@@ -48,7 +48,6 @@
                               (on-event :input-changed input)))))))
 
 (defn- wire-button [button on-event]
-  (println button)
   (-> button
       :widget
       (.addActionListener (reify 
