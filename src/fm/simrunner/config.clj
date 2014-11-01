@@ -1,4 +1,15 @@
-(ns fm.simrunner.config)
+(ns fm.simrunner.config
+  (:require 
+    [clojure.java.io :as jio]))
+
+(def ^{:private true} parameter-keys [:input-file 
+                                      :eps 
+                                      :log-num 
+                                      :stuetz-count 
+                                      :correction 
+                                      :max-deviation 
+                                      :calc-err 
+                                      :acsr-size])
 
 (defn- blank? [trimmed-line]
   (.isEmpty trimmed-line))
@@ -25,9 +36,14 @@
 (defn- trimmed [lines]
   (map #(-> % str .trim) lines))
 
-(defn read-settings [lines]
-  (-> lines
-      trimmed
-      skip-ignored
-      strip-comments))
+(defn read-config-lines [lines]
+  (let [values (-> lines
+                   trimmed
+                   skip-ignored
+                   strip-comments)]
+    (zipmap parameter-keys values)))
+
+(defn read-config-file [file]
+  (with-open [reader (jio/reader file)]
+    (read-config-lines (line-seq reader))))
 
