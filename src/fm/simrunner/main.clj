@@ -19,9 +19,11 @@
 (defn run [& args]
   @(gui/gui-do
     (let [frame (view/simrunner-frame)
-          view  (-> frame :contents :simrunner-view)]
+          view  (-> frame :contents :simrunner-view)
+          frame (:widget frame)]
       (wiring/wire-up view on-event)
-      (-> frame :widget .show))))
+      (.setTitle frame "SimRunner (c) 2014 DEINC")
+      (.show frame))))
 
 (defn -main [& args]
   (apply run args))
