@@ -1,25 +1,23 @@
-(ns fm.simrunner.gui
+(ns fm.simrunner.gui.view
   ^{:doc 
   
-  "The SimRunner GUI."
+  "Views for the SimRunner GUI."
   
     :author "Frank Mosebach"}
+  (:require 
+    [fm.simrunner.gui.core :as gui])  
   (:import 
     (java.awt Insets
               Dimension
               BorderLayout
               GridBagLayout
               GridBagConstraints)
-    (javax.swing SwingUtilities 
-                 JFrame 
-                 JPanel
+    (javax.swing JPanel
                  JScrollPane
                  JLabel
                  JToolBar 
                  JButton
-                 JTextField
-                 JTextArea
-                 JCheckBox)))
+                 JTextArea)))
 
 (def ^{:private true} input-specs [[:select "Input File"]
                                    [:text   "EPS"]
@@ -29,19 +27,6 @@
                                    [:text   "Max Deviation"]
                                    [:check  "Calc Err"]
                                    [:text   "ACSR Size"]])
-
-(defn gui-exec [task]
-  (let [promise (promise)]
-    (if (SwingUtilities/isEventDispatchThread)
-      (do 
-        (deliver promise (task))
-        promise)
-      (do
-        (SwingUtilities/invokeLater #(deliver promise (task)))
-        promise))))
-
-(defmacro gui-do [& body]
- `(gui-exec (fn [] ~@body)))
 
 (defn- tool-bar []
   (let [open-button    (doto (JButton. "Open")
@@ -63,30 +48,6 @@
                 :save-button    {:widget save-button}
                 :save-as-button {:widget save-as-button}
                 :run-button     {:widget run-button}}}))
-
-(defmulti input {:private true} (fn [type & _] type))
-
-(defmethod input :text [type]
-  (let [text-field (doto (JTextField.)
-                         (.setColumns 16))]
-    {:widget text-field}))
-
-(defmethod input :select [type]
-  (let [text-field    (doto (JTextField.)
-                            (.setColumns 16)
-                            (.setEditable false))
-        select-button (doto (JButton. "...")
-                            (.setToolTipText "Click to select"))]
-    {:widget   (doto (JPanel. (BorderLayout.))
-                     (.add text-field BorderLayout/CENTER)
-                     (.add select-button BorderLayout/EAST))
-     :contents {:text-field    text-field
-                :select-button select-button}}))
-
-(defmethod input :check [type]
-  (let [check-box (doto (JCheckBox.)
-                        (.setFocusPainted false))]
-    {:widget check-box}))
 
 (defn- label-constraints [row-index]
   (GridBagConstraints. 0 row-index 1 1 0 0 
@@ -117,7 +78,7 @@
       (recur container 
              (rest specs) 
              (conj inputs (add-input container 
-                                     (input input-type) 
+                                     (gui/input input-type) 
                                      label-text 
                                      row-index)))
       inputs)))
@@ -151,17 +112,12 @@
                 :config-editor config-editor
                 :console       console}}))
 
-(defn simrunner-frame [& {:keys [width height] :or {width 600 height 450}}]
-  (let [frame (doto (JFrame. "SimRunner")
-                    (.setSize width height)
-                    (.setLocationRelativeTo nil))
+(defn simrunner-frame [& {:as options}]
+  (let [frame (apply gui/frame options)
         view  (simrunner-view)]
-    (-> frame 
-        .getContentPane 
-        (.setLayout (BorderLayout.)))
-    (-> frame 
+    (-> frame
+        :widget
         .getContentPane 
         (.add (:widget view)))
-    {:widget   frame
-     :contents {:simrunner-view view}}))
+    (assoc frame :contents {:simrunner-view view})))
 
