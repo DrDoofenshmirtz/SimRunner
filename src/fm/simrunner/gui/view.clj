@@ -19,35 +19,55 @@
                  JButton
                  JTextArea)))
 
-(def ^{:private true} input-specs [[:select "Input File"]
-                                   [:text   "EPS"]
-                                   [:text   "Log Num"]
-                                   [:text   "Stütz #"]
-                                   [:text   "Correction"]
-                                   [:text   "Max Deviation"]
-                                   [:check  "Calc Err"]
-                                   [:text   "ACSR Size"]])
+(def ^{:private true} input-specs [{:id         :input-file
+                                    :type       :select
+                                    :label-text "Input File"}
+                                   {:id         :eps
+                                    :type       :text
+                                    :label-text "EPS"}
+                                   {:id         :log-num
+                                    :type       :text
+                                    :label-text "Log Num"}
+                                   {:id         :stuetz-count
+                                    :type       :text
+                                    :label-text "Stütz #"}
+                                   {:id         :correction
+                                    :type       :text
+                                    :label-text "Correction"}
+                                   {:id         :max-deviation
+                                    :type       :text
+                                    :label-text "Max Deviation"}
+                                   {:id         :calc-err
+                                    :type       :checkbox
+                                    :label-text "Calc Err"}
+                                   {:id         :acr-size
+                                    :type       :text
+                                    :label-text "ACSR Size"}])
 
 (defn- tool-bar []
-  (let [open-button    (doto (JButton. "Open")
-                             (.setToolTipText "Open Config File")) 
-        save-button    (doto (JButton. "Save")
-                             (.setToolTipText "Save current Config File"))
-        save-as-button (doto (JButton. "Save As")
-                             (.setToolTipText "Save Config in new File"))
-        run-button     (doto (JButton. "Run")
-                             (.setToolTipText "Start Simulation Run"))
+  (let [open-button    (gui/button :action :open-config
+                                   :text "Open" 
+                                   :tooltip-text "Open Config File") 
+        save-button    (gui/button :action :save-config
+                                   :text "Save" 
+                                   :tooltip-text "Save current Config File")
+        save-as-button (gui/button :action :save-config-as
+                                   :text "Save As" 
+                                   :tooltip-text "Save Config in new File")
+        run-button     (gui/button :action :run-simulation
+                                   :text "Run" 
+                                   :tooltip-text "Start Simulation Run")
         tool-bar       (doto (JToolBar.)
                              (.setFloatable false)
-                             (.add open-button)
-                             (.add save-button)
-                             (.add save-as-button)
-                             (.add run-button))]
-    {:widget   tool-bar
-     :contents {:open-button    {:widget open-button}
-                :save-button    {:widget save-button}
-                :save-as-button {:widget save-as-button}
-                :run-button     {:widget run-button}}}))
+                             (.add (:widget open-button))
+                             (.add (:widget save-button))
+                             (.add (:widget save-as-button))
+                             (.add (:widget run-button)))]    
+    (gui/widget :tool-bar tool-bar
+                :contents {:open-button    open-button
+                           :save-button    save-button
+                           :save-as-button save-as-button
+                           :run-button     run-button})))
 
 (defn- label-constraints [row-index]
   (GridBagConstraints. 0 row-index 1 1 0 0 
@@ -72,13 +92,13 @@
 
 (defn- add-inputs 
   ([container specs]
-    (add-inputs container (map conj specs (range)) []))
+    (add-inputs container (map #(assoc %1 :row-index %2) specs (range)) []))
   ([container specs inputs]
-    (if-let [[input-type label-text row-index] (first specs)]
+    (if-let [{:keys [id type label-text row-index]} (first specs)]
       (recur container 
              (rest specs) 
              (conj inputs (add-input container 
-                                     (gui/input input-type) 
+                                     (gui/input type :id id) 
                                      label-text 
                                      row-index)))
       inputs)))
