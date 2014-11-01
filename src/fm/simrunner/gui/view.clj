@@ -40,7 +40,7 @@
                                    {:id         :calc-err
                                     :type       :checkbox
                                     :label-text "Calc Err"}
-                                   {:id         :acr-size
+                                   {:id         :acsr-size
                                     :type       :text
                                     :label-text "ACSR Size"}])
 
