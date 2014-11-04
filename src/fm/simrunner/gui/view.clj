@@ -22,6 +22,9 @@
 (def ^{:private true} input-specs [{:id         :input-file
                                     :type       :select
                                     :label-text "Input File"}
+                                   {:id         :output-file
+                                    :type       :select
+                                    :label-text "Output File"}
                                    {:id         :eps
                                     :type       :text
                                     :label-text "EPS"}
