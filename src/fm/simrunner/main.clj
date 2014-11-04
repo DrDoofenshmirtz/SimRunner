@@ -9,21 +9,17 @@
     :name fm.simrunner.Main
     :main true)
   (:require
-    [fm.simrunner.gui (core :as gui) 
-                      (view :as view) 
-                      (wiring :as wiring)]))
+    [fm.simrunner.gui.app :as app])
+  (:import 
+    (java.io File)))
 
-(defn- on-event [& args]
-  (println (format "-- on-event: %s" args)))
 
 (defn run [& args]
-  @(gui/gui-do
-    (let [frame (view/simrunner-frame)
-          view  (-> frame :contents :simrunner-view)
-          frame (:widget frame)]
-      (wiring/wire-up view on-event)
-      (.setTitle frame "SimRunner (c) 2014 DEINC")
-      (.show frame))))
+  (let [[working-directory] args
+        working-directory   (-> (or ".")
+                                File.
+                                .getAbsolutePath)]
+    (app/start {:working-directory working-directory})))
 
 (defn -main [& args]
   (apply run args))
