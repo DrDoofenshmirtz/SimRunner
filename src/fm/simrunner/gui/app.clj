@@ -17,10 +17,7 @@
 
 (defmethod on-action :open-config [_ model & args]
   (println (format "open-config{model: %s args: %s}" model args))
-  (JOptionPane/showMessageDialog (-> args first :widget) 
-                                 "Open SimRunner config file." 
-                                 "Open Config"
-                                 JOptionPane/INFORMATION_MESSAGE))
+  (gui/choose-file (-> args first :widget) :title "Open Config"))  
 
 (defmethod on-action :default [action model & args]
   (println (format "on-action{action: %s model: %s args: %s}" 
