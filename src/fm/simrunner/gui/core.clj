@@ -4,14 +4,16 @@
   "GUI Utilities"
   
     :author "Frank Mosebach"}
-  (:import 
+  (:import
+    (java.io File)
     (java.awt BorderLayout)
     (javax.swing SwingUtilities 
                  JFrame 
                  JPanel
                  JButton
                  JTextField
-                 JCheckBox)))
+                 JCheckBox
+                 JFileChooser)))
 
 (defn gui-exec [task]
   (let [promise (promise)]
@@ -83,4 +85,21 @@
         .getContentPane 
         (.setLayout (BorderLayout.)))
     (make-widget :frame frame)))
+
+(def ^{:private true} default-approve-opts {:text "Ok" :tooltip-text "Ok"})
+
+(defn choose-file
+  [parent & {:keys [title directory approve-opts filters]
+             :or   {title "Choose File" directory (File. ".")}}]
+  (let [{:keys [text tooltip-text]} (merge approve-opts default-approve-opts)
+        file-chooser (doto (JFileChooser. directory)
+                           (.setFileSelectionMode JFileChooser/FILES_ONLY)
+                           (.setMultiSelectionEnabled false)
+                           (.setAcceptAllFileFilterUsed true)
+                           (.setDialogTitle title)
+                           (.setApproveButtonText text)
+                           (.setApproveButtonToolTipText tooltip-text))]
+    (when (= JFileChooser/APPROVE_OPTION 
+             (.showDialog file-chooser parent text))
+      (.getSelectedFile file-chooser))))
 
