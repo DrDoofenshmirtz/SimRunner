@@ -136,8 +136,9 @@
                 :console       console}}))
 
 (defn simrunner-frame [& {:as options}]
-  (let [frame (apply gui/frame options)
-        view  (simrunner-view)]
+  (let [options (apply concat options)
+        frame   (apply gui/frame options)
+        view    (simrunner-view)]
     (-> frame
         :widget
         .getContentPane 
