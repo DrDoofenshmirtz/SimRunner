@@ -1,7 +1,7 @@
 (ns
   ^{:doc 
   
-  "Launches the SimRunner application."
+  "Launcher for the SimRunner Application."
   
     :author "Frank Mosebach"}
   fm.simrunner.main
@@ -9,7 +9,7 @@
     :name fm.simrunner.Main
     :main true)
   (:require
-    [fm.simrunner.gui.app :as app])
+    [fm.simrunner.app :as app])
   (:import 
     (java.io File)))
 

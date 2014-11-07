@@ -1,7 +1,7 @@
-(ns fm.simrunner.gui.app
+(ns fm.simrunner.app
   ^{:doc 
   
-  "The Simrunner GUI Application."
+  "The SimRunner Application."
   
     :author "Frank Mosebach"}
   (:require
