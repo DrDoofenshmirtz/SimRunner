@@ -111,16 +111,16 @@
         alignment-panel (doto (JPanel. (BorderLayout.))
                               (.add input-panel BorderLayout/NORTH))
         scroll-pane     (JScrollPane. alignment-panel)]
-    {:widget   scroll-pane
-     :contents {:inputs (add-inputs input-panel specs)}}))
+    (gui/widget :config-editor scroll-pane
+                :contents {:inputs (add-inputs input-panel specs)})))
 
 (defn- console []
   (let [text-area   (doto (JTextArea.)
                           (.setEditable false)
                           (.setPreferredSize (Dimension. 0 150)))
         scroll-pane (JScrollPane. text-area)]
-    {:widget   scroll-pane
-     :contents {:text-area text-area}}))
+    (gui/widget :console scroll-pane
+                :contents {:text-area (gui/widget :text-area text-area)})))
 
 (defn simrunner-view []
   (let [tool-bar      (tool-bar)
@@ -130,10 +130,10 @@
                             (.add (:widget tool-bar) BorderLayout/NORTH)
                             (.add (:widget config-editor) BorderLayout/CENTER)
                             (.add (:widget console) BorderLayout/SOUTH))]
-    {:widget   main-panel
-     :contents {:tool-bar      tool-bar
-                :config-editor config-editor
-                :console       console}}))
+    (gui/widget :simrunner-view main-panel
+                :contents {:tool-bar      tool-bar
+                           :config-editor config-editor
+                           :console       console})))
 
 (defn simrunner-frame [& {:as options}]
   (let [options (apply concat options)
