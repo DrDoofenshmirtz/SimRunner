@@ -145,3 +145,12 @@
         (.add (:widget view)))
     (assoc frame :contents {:simrunner-view view})))
 
+(defn widget-seq [widget]
+  (lazy-seq
+    (cons widget
+      (when-let [contents (vals (:contents widget))]
+        (mapcat #(if (sequential? %)
+                   (mapcat widget-seq %)
+                   (widget-seq %))
+                contents)))))
+
