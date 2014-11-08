@@ -19,33 +19,36 @@
                  JButton
                  JTextArea)))
 
-(def ^{:private true} input-specs [{:id         :input-file
-                                    :type       :select
-                                    :label-text "Input File"}
-                                   {:id         :output-file
-                                    :type       :select
-                                    :label-text "Output File"}
-                                   {:id         :eps
-                                    :type       :text
-                                    :label-text "EPS"}
-                                   {:id         :log-num
-                                    :type       :text
-                                    :label-text "Log Num"}
-                                   {:id         :stuetz-count
-                                    :type       :text
-                                    :label-text "Stütz #"}
-                                   {:id         :correction
-                                    :type       :text
-                                    :label-text "Correction"}
-                                   {:id         :max-deviation
-                                    :type       :text
-                                    :label-text "Max Deviation"}
-                                   {:id         :calc-err
-                                    :type       :checkbox
-                                    :label-text "Calc Err"}
-                                   {:id         :acsr-size
-                                    :type       :text
-                                    :label-text "ACSR Size"}])
+(def ^{:private true} input-ids [:input-file
+                                 :output-file
+                                 :eps
+                                 :log-num
+                                 :stuetz-count
+                                 :correction
+                                 :max-deviation
+                                 :calc-err
+                                 :acsr-size])
+
+(def ^{:private true} input-specs (map #(assoc %2 :id %1)
+                                       input-ids
+                                       [{:type       :select
+                                         :label-text "Input File"}
+                                        {:type       :select
+                                         :label-text "Output File"}
+                                        {:type       :text
+                                         :label-text "EPS"}
+                                        {:type       :text
+                                         :label-text "Log Num"}
+                                        {:type       :text
+                                         :label-text "Stütz #"}
+                                        {:type       :text
+                                         :label-text "Correction"}
+                                        {:type       :text
+                                         :label-text "Max Deviation"}
+                                        {:type       :checkbox
+                                         :label-text "Calc Err"}
+                                        {:type       :text
+                                         :label-text "ACSR Size"}]))
 
 (defn- tool-bar []
   (let [open-button    (gui/button :action :open-config
@@ -153,4 +156,10 @@
                    (mapcat widget-seq %)
                    (widget-seq %))
                 contents)))))
+
+(defn- inputs [view])
+
+(defn render [view model]
+  (doseq [input (inputs view)]
+    (println input)))
 
