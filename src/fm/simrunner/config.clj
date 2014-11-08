@@ -17,6 +17,16 @@
     (Double/valueOf (str string))
     (catch NumberFormatException x)))
 
+(defn- string->boolean [^String string]
+  (let [string (-> string str .trim)]
+    (cond
+      (= "1" string) true
+      (= "0" string) false
+      :else nil)))
+
+(defn- boolean? [value]
+  (instance? Boolean value))
+
 (def ^{:private true} parameter-ids [:input-file 
                                      :eps 
                                      :log-num 
@@ -38,24 +48,25 @@
                                         :string->value string->double}
                                        {:valid?        number?
                                         :string->value string->double}
-                                       {:valid?        number?
-                                        :string->value string->double}
+                                       {:valid?        boolean?
+                                        :string->value string->boolean}
                                        {:valid?        number?
                                         :string->value string->double}])
 
 (def ^{:private true} parameter-defs (zipmap parameter-ids parameter-specs))
-                                       
-(defn- string->value [param-id value-string]
+     
+(defn- throw-undefined-param-id [id]
+  (throw (IllegalArgumentException. (format "Undefined parameter id: %s!" id))))
+
+(defn string->value [param-id value-string]
   (if-let [string->value (get-in parameter-defs [param-id :string->value])]
     (string->value value-string)
-    (throw (IllegalArgumentException. (format "Undefined parameter id: %s!" 
-                                              param-id)))))
+    (throw-undefined-param-id param-id)))
 
-(defn- value-valid? [param-id value]
+(defn value-valid? [param-id value]
   (if-let [valid? (get-in parameter-defs [param-id :valid?])]
     (valid? value)
-    (throw (IllegalArgumentException. (format "Undefined parameter id: %s!" 
-                                              param-id)))))
+    (throw-undefined-param-id param-id)))
 
 (defn- blank? [trimmed-line]
   (.isEmpty trimmed-line))
