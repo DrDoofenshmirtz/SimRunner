@@ -157,9 +157,24 @@
                    (widget-seq %))
                 contents)))))
 
-(defn- inputs [view])
+(defn- inputs [view]
+  (let [input-ids (into #{} input-ids)]
+    (filter (comp input-ids :id meta)
+            (widget-seq view))))
+
+(defmulti set-value {:private true} (fn [input _] (type input)))
+
+(defmethod set-value :text-input [input value]
+  (-> input
+      :widget
+      (.setText (str value))))
+
+(defmethod set-value :default [input value]
+  (println (format "set-value{%s value: %s}" (type input) value)))
 
 (defn render [view model]
   (doseq [input (inputs view)]
-    (println input)))
+    (let [input-id (:id (meta input))
+          value    (input-id model)]
+      (set-value input value))))
 
