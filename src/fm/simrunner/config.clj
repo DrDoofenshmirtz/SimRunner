@@ -4,6 +4,19 @@
   (:import 
     (java.io File)))
 
+(defn- string->file [^String string]
+  (let [string (-> string str .trim)]
+    (when-not (.isEmpty string)
+      (File. string))))
+
+(defn- file? [value]
+  (instance? File value))
+
+(defn- string->double [^String string]
+  (try
+    (Double/valueOf (str string))
+    (catch NumberFormatException x)))
+
 (def ^{:private true} parameter-ids [:input-file 
                                      :eps 
                                      :log-num 
@@ -13,11 +26,37 @@
                                      :calc-err 
                                      :acsr-size])
 
-(def ^{:private true} blank-config (-> parameter-ids
-                                       (zipmap (repeat nil))
-                                       (assoc :invalid-ids 
-                                              (into #{} parameter-ids))))
+(def ^{:private true} parameter-specs [{:valid?        file?
+                                        :string->value string->file}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}
+                                       {:valid?        number?
+                                        :string->value string->double}])
+
+(def ^{:private true} parameter-defs (zipmap parameter-ids parameter-specs))
                                        
+(defn- string->value [param-id value-string]
+  (if-let [string->value (get-in parameter-defs [param-id :string->value])]
+    (string->value value-string)
+    (throw (IllegalArgumentException. (format "Undefined parameter id: %s!" 
+                                              param-id)))))
+
+(defn- value-valid? [param-id value]
+  (if-let [valid? (get-in parameter-defs [param-id :valid?])]
+    (valid? value)
+    (throw (IllegalArgumentException. (format "Undefined parameter id: %s!" 
+                                              param-id)))))
+
 (defn- blank? [trimmed-line]
   (.isEmpty trimmed-line))
 
@@ -43,63 +82,49 @@
 (defn- trimmed [lines]
   (map #(-> % str .trim) lines))
 
-(defn- string->double [^String string]
-  (try
-    (Double/valueOf (str string))
-    (catch NumberFormatException x)))
-
-(defn- string->file [^String string]
-  (let [string (-> string str .trim)]
-    (when-not (.isEmpty string)
-      (File. string))))
-
-(defmulti string->value {:private true} (fn [param-id _] param-id))
-
-(defmethod string->value :input-file [_ string] 
-  (string->file string))
-
-(defmethod string->value :eps [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :log-num [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :stuetz-count [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :correction [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :max-deviation [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :calc-err [_ string] 
-  (string->double string)) 
-
-(defmethod string->value :acsr-size [_ string] 
-  (string->double string)) 
-
 (defn strings->values [config]
-  (reduce (fn [config [param-id value-string]]
-            (if-let [value (string->value param-id value-string)]
-              (-> config
-                  (assoc param-id value)
-                  (update-in [:invalid-ids] disj param-id))
-              (assoc config param-id nil)))
-          {:invalid-ids (into #{} parameter-ids)}
-          config))
+  (->> (merge (zipmap parameter-ids (repeat nil)) config)
+       (map (fn [[param-id value-string]]
+              [param-id (string->value param-id value-string)]))
+       (into {})))
+
+(defn validate [config]
+  (reduce (fn [validated param-id]
+            (let [value (param-id config)]
+              (if (value-valid? param-id value)
+                (-> validated
+                    (assoc param-id value)
+                    (vary-meta update-in [::invalid-ids] disj param-id))
+                (assoc validated param-id nil))))
+          (with-meta {}
+                     (assoc (meta config) 
+                            :type         ::config
+                            ::invalid-ids (into #{} parameter-ids)))
+          parameter-ids))
+
+(defn invalid-ids
+  ([config]
+    (invalid-ids config false))
+  ([config validate?]
+    (-> (if validate? (validate config) config) meta ::invalid-ids)))
+
+(defn valid? 
+  ([config]
+    (valid? config false))
+  ([config validate?]
+    (-> (if validate? (validate config) config) invalid-ids seq not)))
 
 (defn read-config-lines [lines]
   (let [values (-> lines
                    trimmed
                    skip-ignored
                    strip-comments)]
-    (strings->values (zipmap parameter-ids values))))
+    (-> parameter-ids
+        (zipmap values)
+        strings->values
+        validate)))
 
 (defn read-config-file [file]
   (with-open [reader (jio/reader file)]
     (read-config-lines (line-seq reader))))
-
-(defn valid? [config]
-  (-> config :invalid-ids seq not))
 
