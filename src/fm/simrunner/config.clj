@@ -108,11 +108,16 @@
   ([config validate?]
     (-> (if validate? (validate config) config) meta ::invalid-ids)))
 
+(defn config? [config]
+  (= ::config (type config)))
+
 (defn valid? 
   ([config]
     (valid? config false))
   ([config validate?]
-    (-> (if validate? (validate config) config) invalid-ids seq not)))
+    (let [config (if validate? (validate config) config)]
+      (and (config? config)
+           (-> config invalid-ids seq not)))))
 
 (defn read-config-lines [lines]
   (let [values (-> lines
