@@ -17,13 +17,15 @@
 
 (defn- lock! [{app-state :state}]
   (when-not (-> @app-state :ui :locked?)
-    (view/lock (-> (swap! app-state lock) :ui :view))))
+    (let [{:keys [view model]} (:ui (swap! app-state lock))]
+      (view/lock view model))))
 
 (defn- unlock [app-state]
   (assoc-in app-state [:ui :model :locked?] false))
 
 (defn- unlock! [{app-state :state}]
-  (view/unlock (-> (swap! app-state unlock) :ui :view)))
+  (let [{:keys [view model]} (:ui (swap! app-state unlock))]
+    (view/unlock view model)))
 
 (defn- run-task [{worker :worker :as app} task & args]
   (send-off worker 
@@ -53,9 +55,9 @@
       app-state)))
 
 (defn- stop-rendering! [{app-state :state} unlock?]
-  (swap! app-state stop-rendering unlock?)
-  (when unlock?
-    (view/unlock (-> @app-state :ui :view))))
+  (let [{:keys [view model]} (:ui (swap! app-state stop-rendering unlock?))]
+    (when unlock?
+      (view/unlock view model))))
 
 (defn- update-and-render! 
   ([app update]
