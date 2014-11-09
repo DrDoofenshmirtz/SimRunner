@@ -28,32 +28,32 @@
 (defn- run-task [{worker :worker :as app} task & args]
   (send-off worker 
             (fn [_ &]
-              (apply task app args) nil)))
+              (try
+                (apply task app args)
+                nil
+                (catch Exception task-failed
+                  (.printStackTrace task-failed)
+                  nil)))))
 
 (defn- mark-dirty [app-state]
-  (update-in app-state [:ui :model :dirty-marks] inc))
-
-(defn- unmark-dirty [app-state unmark]
-  (update-in app-state [:ui :model :dirty-marks] #(max 0 (- % unmark))))
+  (assoc-in app-state [:ui :model :dirty?] true))
 
 (defn- start-rendering [app-state]
-  (if (-> app-state :ui :model :dirty-marks pos?)
-    (assoc-in app-state [:ui :model :rendering?] true)
+  (if (-> app-state :ui :model :dirty?)
+    (update-in app-state [:ui :model] assoc :rendering? true :dirty? false)
     app-state))
 
 (defn- start-rendering! [{app-state :state}]
-  (-> (swap! app-state start-rendering) :ui :model :dirty-marks))
+  (swap! app-state start-rendering))
 
-(defn- stop-rendering [app-state unmark unlock?]
-  (let [app-state (-> app-state
-                      (assoc-in [:ui :model :rendering?] false)
-                      (unmark-dirty unmark))]
+(defn- stop-rendering [app-state unlock?]
+  (let [app-state (assoc-in app-state [:ui :model :rendering?] false)]
     (if unlock?
       (assoc-in app-state [:ui :model :locked?] false) 
       app-state)))
 
-(defn- stop-rendering! [{app-state :state} unmark unlock?]
-  (swap! app-state stop-rendering unmark unlock?)
+(defn- stop-rendering! [{app-state :state} unlock?]
+  (swap! app-state stop-rendering unlock?)
   (when unlock?
     (view/unlock (-> @app-state :ui :view))))
 
@@ -63,18 +63,19 @@
   ([{app-state :state :as app} update unlock?]
     (swap! app-state update)
     (gui/gui-do
-      (let [dirty-marks (start-rendering! app)]
-        (when (pos? dirty-marks) 
-          (try
-            (let [{:keys [view model]} (:ui @app-state)]
-              (io! "Do not update the ui in a transaction!"
-                (view/render view model)))
-            (finally
-              (stop-rendering! app dirty-marks unlock?))))))))
+      (let [app-state (start-rendering! app)]
+        (try
+          (let [{:keys [view model]} (:ui app-state)]
+            (io! "Do not update the ui in a transaction!"
+              (view/render view model)))
+          (finally
+            (stop-rendering! app unlock?)))))))
 
 (defn- apply-config [app-state config]
   (-> app-state
       (update-in [:ui :model :input-values] merge config)
+      (assoc-in [:ui :model :invalid-ids] (config/invalid-ids config))
+      (assoc-in [:model :config] config)
       mark-dirty))
 
 (defn- open-config [{app-state :state :as app} widget file]
@@ -129,14 +130,18 @@
   (println (format "on-event{id: %s args: %s}" event-id args)))
 
 (defn- app [config view]
-  {:config config
-   :worker (agent nil)
-   :state  (atom {:ui    {:view  view
-                          :model {:input-values {}
-                                  :dirty-marks  0
-                                  :locked?      false
-                                  :rendering?   false}}
-                  :model {}})})
+  (let [blank-config (config/validate nil)
+        invalid-ids  (config/invalid-ids blank-config)]
+    {:config config
+     :worker (agent nil)
+     :state  (atom {:ui    {:view  view
+                            :model {:enabled-actions #{:open-config} 
+                                    :input-values    {}
+                                    :invalid-values  invalid-ids
+                                    :dirty?          false
+                                    :locked?         false
+                                    :rendering?      false}}
+                    :model {:config blank-config}})}))
 
 (defn- event-handler [app]
   (fn [& args]
