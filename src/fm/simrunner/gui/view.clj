@@ -208,3 +208,13 @@
 (defn render [view model]
   (update-inputs view (:input-values model)))
 
+(defn lock [view]
+  (doseq [{widget :widget} (widget-seq view)]
+    (.setEnabled widget false))
+  view)
+
+(defn unlock [view]
+  (doseq [{widget :widget} (widget-seq view)]
+    (.setEnabled widget true))
+  view)
+
