@@ -76,7 +76,9 @@
 (defn- apply-config [app-state config]
   (-> app-state
       (update-in [:ui :model :input-values] merge config)
-      (assoc-in [:ui :model :invalid-ids] (config/invalid-ids config))
+      (assoc-in [:ui :model :invalid-ids] #{})
+      (assoc-in [:ui :model :enabled-actions] 
+                #{:open-config :save-config :save-config-as :run-simulation})
       (assoc-in [:model :config] config)
       mark-dirty))
 
@@ -154,8 +156,12 @@
     (let [frame (view/simrunner-frame)
           view  (-> frame :contents :simrunner-view)
           frame (:widget frame)
-          app   (app config view)]
+          app   (app config view)
+          model (-> app :state deref :ui :model)]
       (wiring/wire-up view (event-handler app))
+      (-> view 
+          (view/lock model) 
+          (view/unlock model))
       (.setTitle frame "SimRunner (c) 2014 DEINC")
       (.show frame))))
 
