@@ -6,7 +6,8 @@
     :author "Frank Mosebach"}
   (:require 
     [fm.simrunner.gui.core :as gui])  
-  (:import 
+  (:import
+    (java.io File)
     (java.awt Insets
               Dimension
               BorderLayout
@@ -148,7 +149,7 @@
         (.add (:widget view)))
     (assoc frame :contents {:simrunner-view view})))
 
-(defn widget-seq [widget]
+(defn- widget-seq [widget]
   (lazy-seq
     (cons widget
       (when-let [contents (vals (:contents widget))]
@@ -162,12 +163,37 @@
     (filter (comp input-ids :id meta)
             (widget-seq view))))
 
-(defmulti set-value {:private true} (fn [input _] (type input)))
+(defmulti set-value {:private true} (fn [input value] 
+                                      [(type input) (type value)]))
 
-(defmethod set-value :text-input [input value]
+(defmethod set-value [:select-input Object] [input value]
+  (-> input
+      :contents
+      :select-text
+      :widget
+      (.setText (str value))))
+
+(defmethod set-value [:select-input File] [input value]
+  (set-value input (.getAbsolutePath value)))
+
+(defmethod set-value [:select-input nil] [input value]
+  (set-value input ""))
+
+(defmethod set-value [:text-input Object] [input value]
   (-> input
       :widget
       (.setText (str value))))
+
+(defmethod set-value [:text-input nil] [input value]
+  (set-value input ""))
+
+(defmethod set-value [:checkbox-input Object] [input value]
+  (-> input
+      :widget
+      (.setSelected (boolean value))))
+
+(defmethod set-value [:checkbox-input nil] [input value]
+  (set-value input false))
 
 (defmethod set-value :default [input value]
   (println (format "set-value{%s value: %s}" (type input) value)))
@@ -176,7 +202,8 @@
   (doseq [input (inputs view)]
     (let [input-id (:id (meta input))
           value    (input-id values)]
-      (set-value input value))))
+      (set-value input value)))
+  view)
 
 (defn render [view model]
   (update-inputs view (:input-values model)))
