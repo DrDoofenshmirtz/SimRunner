@@ -13,14 +13,14 @@
     (javax.swing JOptionPane)))
 
 (defn- lock [app-state]
-  (update-in app-state [:ui :model :locked] inc))
+  (assoc-in app-state [:ui :model :locked?] true))
 
 (defn- lock! [{app-state :state}]
-  (when (-> @app-state :ui :model :locked zero?)
+  (when-not (-> @app-state :ui :model :locked?)
     (swap! app-state lock)))
 
 (defn- unlock [app-state]
-  (update-in app-state [:ui :model :locked] #(max 0 (dec %))))
+  (assoc-in app-state [:ui :model :locked?] false))
 
 (defn- unlock! [{app-state :state}]
   (swap! app-state unlock))
@@ -28,50 +28,63 @@
 (defn- run-task [{worker :worker :as app} task & args]
   (send-off worker 
             (fn [_ &]
-              (try
-                (apply task app args)
-                nil
-                (finally (unlock! app))))))
+              (apply task app args) nil)))
+
+(defn- mark-dirty [app-state]
+  (update-in app-state [:ui :model :dirty-marks] inc))
+
+(defn- unmark-dirty [app-state unmark]
+  (update-in app-state [:ui :model :dirty-marks] #(max 0 (- % unmark))))
 
 (defn- start-rendering [app-state]
-  (assoc-in app-state [:ui :model :rendering?] true))
+  (if (-> app-state :ui :model :dirty-marks pos?)
+    (assoc-in app-state [:ui :model :rendering?] true)
+    app-state))
 
 (defn- start-rendering! [{app-state :state}]
-  (when (-> @app-state :ui :model :dirty?)
-    (swap! app-state start-rendering)))
+  (-> (swap! app-state start-rendering) :ui :model :dirty-marks))
 
-(defn- stop-rendering [app-state]
-  (-> app-state 
-      (assoc-in [:ui :model :rendering?] false)
-      (assoc-in [:ui :model :dirty?] false)))
+(defn- stop-rendering [app-state unmark unlock?]
+  (let [app-state (-> app-state
+                      (assoc-in [:ui :model :rendering?] false)
+                      (unmark-dirty unmark))]
+    (if unlock?
+      (assoc-in app-state [:ui :model :locked?] false)
+      app-state)))
 
-(defn- stop-rendering! [{app-state :state}]
-  (when (-> @app-state :ui :model :rendering?)
-    (swap! app-state stop-rendering)))
+(defn- stop-rendering! [{app-state :state} unmark unlock?]
+  (swap! app-state stop-rendering unmark unlock?))
 
-(defn render [app]
-  (gui/gui-do
-    (when (start-rendering! app)
-      (try
-        (let [{:keys [view model]} (-> app :state deref :ui)]
-          (io! "Do not update the ui in a transaction!"
-            (view/render view (:inputs model))))
-        (finally
-          (stop-rendering! app))))))
+(defn- update-and-render! 
+  ([app update]
+    (update-and-render! app update true))
+  ([{app-state :state :as app} update unlock?]
+    (swap! app-state update)
+    (gui/gui-do
+      (let [dirty-marks (start-rendering! app)]
+        (when (pos? dirty-marks) 
+          (try
+            (let [{:keys [view model]} (:ui @app-state)]
+              (io! "Do not update the ui in a transaction!"
+                (view/render view model)))
+            (finally
+              (stop-rendering! app dirty-marks unlock?))))))))
+
+(defn- apply-config [app-state config]
+  (-> app-state
+      (update-in [:ui :model :input-values] merge config)
+      mark-dirty))
 
 (defn- open-config [{app-state :state :as app} widget file]
   (let [config (config/read-config-file file)]
     (if (config/valid? config)
-      (do
-        (swap! app-state #(-> % 
-                              (assoc-in [:ui :model :inputs :eps] "Mausi")
-                              (assoc-in [:ui :model :dirty?] true)))
-        (render app))
-      @(gui/gui-do
+      (update-and-render! app #(apply-config % config))
+      (gui/gui-do
         (JOptionPane/showMessageDialog (:widget widget) 
                                        "The selected config file is not valid." 
                                        "Open Config" 
-                                       JOptionPane/ERROR_MESSAGE)))))
+                                       JOptionPane/ERROR_MESSAGE)
+        (unlock! app)))))
 
 (defmulti on-action {:private true} (fn [action & _] action))
 
@@ -117,10 +130,10 @@
   {:config config
    :worker (agent nil)
    :state  (atom {:ui    {:view  view
-                          :model {:inputs     {}
-                                  :dirty?     false
-                                  :locked     0
-                                  :rendering? false}}
+                          :model {:input-values {}
+                                  :dirty-marks  0
+                                  :locked?      false
+                                  :rendering?   false}}
                   :model {}})})
 
 (defn- event-handler [app]

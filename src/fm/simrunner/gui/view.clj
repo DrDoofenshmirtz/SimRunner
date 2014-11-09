@@ -172,9 +172,12 @@
 (defmethod set-value :default [input value]
   (println (format "set-value{%s value: %s}" (type input) value)))
 
-(defn render [view model]
+(defn- update-inputs [view values]
   (doseq [input (inputs view)]
     (let [input-id (:id (meta input))
-          value    (input-id model)]
+          value    (input-id values)]
       (set-value input value))))
+
+(defn render [view model]
+  (update-inputs view (:input-values model)))
 
