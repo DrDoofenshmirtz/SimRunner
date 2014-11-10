@@ -60,13 +60,16 @@
                      vals
                      (filter #(-> % meta :action actions)))]
     (doseq [button buttons]
-      (wire-button button on-event))))
+      (wire-button button on-event)))
+  view)
 
 (defn- wire-inputs [view on-event]
-    (doseq [input (get-in view [:contents :config-editor :contents :inputs])]
-      (wire-input input on-event)))
+  (doseq [input (get-in view [:contents :config-editor :contents :inputs])]
+    (wire-input input on-event))
+  view)
 
 (defn wire-up [view on-event]
-  (wire-toolbar-buttons view on-event)
-  (wire-inputs view on-event))
+  (-> view
+      (wire-toolbar-buttons on-event)
+      (wire-inputs on-event)))
 
