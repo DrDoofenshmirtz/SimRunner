@@ -145,7 +145,8 @@
                                     :dirty?          false
                                     :locked?         false
                                     :rendering?      false}}
-                    :model {:config blank-config}})}))
+                    :model {:config    blank-config
+                            :modified? false}})}))
 
 (defn- event-handler [app]
   (fn [& args]
@@ -158,9 +159,8 @@
           frame (:widget frame)
           app   (app config view)
           model (-> app :state deref :ui :model)]
-      (wiring/wire-up view (event-handler app))
-      (-> view 
-          (view/lock model) 
+      (-> view     
+          (wiring/wire-up (event-handler app))
           (view/unlock model))
       (.setTitle frame "SimRunner (c) 2014 DEINC")
       (.show frame))))

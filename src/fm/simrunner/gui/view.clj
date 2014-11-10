@@ -165,25 +165,6 @@
         (.add (:widget view)))
     (assoc frame :contents {:simrunner-view view})))
 
-(defn- widget-seq [widget]
-  (lazy-seq
-    (cons widget
-      (when-let [contents (vals (:contents widget))]
-        (mapcat #(if (sequential? %)
-                   (mapcat widget-seq %)
-                   (widget-seq %))
-                contents)))))
-
-(defn- inputs [view]
-  (let [input-ids (into #{} input-ids)]
-    (filter (comp input-ids :id meta)
-            (widget-seq view))))
-
-(defn- buttons [view]
-  (let [action-ids (into #{} action-ids)]
-    (filter (comp action-ids :action meta)
-            (widget-seq view))))
-
 (defmulti set-value {:private true} (fn [input value] 
                                       [(type input) (type value)]))
 
@@ -219,6 +200,25 @@
 (defmethod set-value :default [input value]
   (println (format "set-value{%s value: %s}" (type input) value)))
 
+(defn- widget-seq [widget]
+  (lazy-seq
+    (cons widget
+      (when-let [contents (vals (:contents widget))]
+        (mapcat #(if (sequential? %)
+                   (mapcat widget-seq %)
+                   (widget-seq %))
+                contents)))))
+
+(defn- inputs [view]
+  (let [input-ids (into #{} input-ids)]
+    (filter (comp input-ids :id meta)
+            (widget-seq view))))
+
+(defn- buttons [view]
+  (let [action-ids (into #{} action-ids)]
+    (filter (comp action-ids :action meta)
+            (widget-seq view))))
+
 (defn- update-inputs [view {values :input-values}]
   (doseq [input (inputs view)]
     (let [input-id (:id (meta input))
@@ -234,12 +234,14 @@
     (.setEnabled widget false))
   view)
 
+(defn- enable-button? [button enabled-actions]
+  (-> button meta :action enabled-actions boolean))
+
 (defn- unlock-buttons [view model]
-  (let [{:keys [enabled-actions]} model
-        buttons (filter (comp enabled-actions :action meta) (buttons view))]
-    (doseq [{widget :widget} buttons]
-      (.setEnabled widget true))
-    view))
+  (let [{:keys [enabled-actions]} model]
+    (doseq [{widget :widget :as button} (buttons view)]
+      (.setEnabled widget (enable-button? button enabled-actions))))
+  view)
 
 (defn- unlock-inputs [view model]
   (doseq [{widget :widget} (mapcat widget-seq (inputs view))]
