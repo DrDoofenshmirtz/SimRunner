@@ -6,7 +6,8 @@
     :author "Frank Mosebach"}
   fm.simrunner.gui.view
   (:require 
-    [fm.simrunner.gui.core :as gui])  
+    [fm.simrunner.gui (core :as gui) 
+                      (toc :as toc)])  
   (:import
     (java.io File)
     (java.awt Insets
@@ -150,10 +151,10 @@
                             (.add (:widget tool-bar) BorderLayout/NORTH)
                             (.add (:widget config-editor) BorderLayout/CENTER)
                             (.add (:widget console) BorderLayout/SOUTH))]
-    (gui/widget :simrunner-view main-panel
-                :contents {:tool-bar      tool-bar
-                           :config-editor config-editor
-                           :console       console})))
+    (toc/with-toc (gui/widget :simrunner-view main-panel
+                              :contents {:tool-bar      tool-bar
+                                         :config-editor config-editor
+                                         :console       console}))))
 
 (defn simrunner-frame [& {:as options}]
   (let [options (apply concat options)
@@ -200,27 +201,8 @@
 (defmethod set-value :default [input value]
   (println (format "set-value{%s value: %s}" (type input) value)))
 
-(defn- widget-seq [widget]
-  (lazy-seq
-    (cons widget
-      (when-let [contents (vals (:contents widget))]
-        (mapcat #(if (sequential? %)
-                   (mapcat widget-seq %)
-                   (widget-seq %))
-                contents)))))
-
-(defn- inputs [view]
-  (let [input-ids (into #{} input-ids)]
-    (filter (comp input-ids :id meta)
-            (widget-seq view))))
-
-(defn- buttons [view]
-  (let [action-ids (into #{} action-ids)]
-    (filter (comp action-ids :action meta)
-            (widget-seq view))))
-
 (defn- update-inputs [view {values :input-values}]
-  (doseq [input (inputs view)]
+  (doseq [input (toc/inputs view)]
     (let [input-id (:id (meta input))
           value    (input-id values)]
       (set-value input value)))
@@ -230,7 +212,7 @@
   (update-inputs view model))
 
 (defn lock [view model]
-  (doseq [{widget :widget} (widget-seq view)]
+  (doseq [{widget :widget} (toc/widgets view)]
     (.setEnabled widget false))
   view)
 
@@ -239,12 +221,12 @@
 
 (defn- unlock-buttons [view model]
   (let [{:keys [enabled-actions]} model]
-    (doseq [{widget :widget :as button} (buttons view)]
+    (doseq [{widget :widget :as button} (toc/buttons view)]
       (.setEnabled widget (enable-button? button enabled-actions))))
   view)
 
 (defn- unlock-inputs [view model]
-  (doseq [{widget :widget} (mapcat widget-seq (inputs view))]
+  (doseq [{widget :widget} (mapcat gui/widget-seq (toc/inputs view))]
     (.setEnabled widget true))
   view)
 

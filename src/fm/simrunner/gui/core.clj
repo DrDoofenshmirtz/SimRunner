@@ -87,6 +87,15 @@
         (.setLayout (BorderLayout.)))
     (make-widget :frame frame)))
 
+(defn widget-seq [widget]
+  (lazy-seq
+    (cons widget
+      (when-let [contents (vals (:contents widget))]
+        (mapcat #(if (sequential? %)
+                   (mapcat widget-seq %)
+                   (widget-seq %))
+                contents)))))
+
 (def ^{:private true} default-approve-opts {:text "Ok" :tooltip-text "Ok"})
 
 (defn choose-file

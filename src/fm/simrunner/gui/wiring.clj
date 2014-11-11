@@ -5,6 +5,8 @@
   
     :author "Frank Mosebach"}
   fm.simrunner.gui.wiring
+  (:require
+    [fm.simrunner.gui.toc :as toc])
   (:import
     (java.awt BorderLayout)
     (java.awt.event ActionListener)
@@ -52,15 +54,12 @@
                               (on-event :action-performed button))))))
 
 (defn- wire-toolbar-buttons [view on-event]
-  (let [buttons (->> (get-in view [:contents :tool-bar :contents])
-                     vals
-                     (filter #(-> % meta :action)))]
-    (doseq [button buttons]
-      (wire-button button on-event)))
+  (doseq [button (toc/buttons view)]
+    (wire-button button on-event))
   view)
 
 (defn- wire-inputs [view on-event]
-  (doseq [input (get-in view [:contents :config-editor :contents :inputs])]
+  (doseq [input (toc/inputs view)]
     (wire-input input on-event))
   view)
 

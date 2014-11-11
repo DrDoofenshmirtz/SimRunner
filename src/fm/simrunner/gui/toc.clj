@@ -4,7 +4,9 @@
   "Creation of a Table of View Contents."
     
     :author "Frank Mosebach"}
-   fm.simrunner.gui.toc)  
+   fm.simrunner.gui.toc
+   (:require
+     [fm.simrunner.gui.core :as gui]))  
 
 (def ^{:private true} buttons-path [:contents :tool-bar :contents])
 
@@ -25,21 +27,24 @@
 (defn- add-console [view]
   (vary-meta view assoc-in [::toc :console] (get-in view console-path)))
 
-(defn- widget-seq [widget]
-  (lazy-seq
-    (cons widget
-      (when-let [contents (vals (:contents widget))]
-        (mapcat #(if (sequential? %)
-                   (mapcat widget-seq %)
-                   (widget-seq %))
-                contents)))))
-
 (defn- add-widgets [view]
-  (vary-meta view assoc-in [::toc :widgets] (widget-seq view)))
+  (vary-meta view assoc-in [::toc :widgets] (gui/widget-seq view)))
 
 (defn with-toc [view]
   (-> view add-buttons add-inputs add-console))
 
 (defn toc [view]
   (-> view meta ::toc))
+
+(defn buttons [view]
+  (-> view toc :buttons vals))
+
+(defn inputs [view]
+  (-> view toc :inputs vals))
+
+(defn console [view]
+  (-> view toc :console))
+
+(defn widgets [view]
+  (-> view toc :widgets))
 
