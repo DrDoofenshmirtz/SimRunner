@@ -1,11 +1,12 @@
-(ns fm.simrunner.app
+(ns 
   ^{:doc 
   
   "The SimRunner Application."
   
     :author "Frank Mosebach"}
+  fm.simrunner.app
   (:require
-    [fm.simrunner (config :as config)]
+    [fm.simrunner.config :as config]
     [fm.simrunner.gui (core :as gui) 
                       (view :as view) 
                       (wiring :as wiring)])
@@ -154,6 +155,7 @@
 
 (defn start [config]
   @(gui/gui-do
+    ;; TODO: refactor initialization.
     (let [frame (view/simrunner-frame)
           view  (-> frame :contents :simrunner-view)
           frame (:widget frame)

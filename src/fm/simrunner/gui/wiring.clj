@@ -1,18 +1,14 @@
-(ns fm.simrunner.gui.wiring
+(ns
   ^{:doc 
   
   "Wire up the Widgets of the SimRunner GUI with an Event Handler."
   
     :author "Frank Mosebach"}
-  (:import 
+  fm.simrunner.gui.wiring
+  (:import
     (java.awt BorderLayout)
     (java.awt.event ActionListener)
     (javax.swing.event DocumentListener)))
-
-(def ^{:private true} actions #{:open-config
-                                :save-config
-                                :save-config-as
-                                :run-simulation})
 
 (defmulti wire-input ^{:private true} (fn [input & _] (type input)))
 
@@ -58,7 +54,7 @@
 (defn- wire-toolbar-buttons [view on-event]
   (let [buttons (->> (get-in view [:contents :tool-bar :contents])
                      vals
-                     (filter #(-> % meta :action actions)))]
+                     (filter #(-> % meta :action)))]
     (doseq [button buttons]
       (wire-button button on-event)))
   view)

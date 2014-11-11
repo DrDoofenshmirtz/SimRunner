@@ -1,9 +1,10 @@
-(ns fm.simrunner.gui.core
+(ns
   ^{:doc 
   
   "GUI Utilities"
   
     :author "Frank Mosebach"}
+  fm.simrunner.gui.core
   (:import
     (java.io File)
     (java.awt BorderLayout)

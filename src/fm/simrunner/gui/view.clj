@@ -1,9 +1,10 @@
-(ns fm.simrunner.gui.view
+(ns
   ^{:doc 
   
   "Views for the SimRunner GUI."
   
     :author "Frank Mosebach"}
+  fm.simrunner.gui.view
   (:require 
     [fm.simrunner.gui.core :as gui])  
   (:import
@@ -54,8 +55,7 @@
 (def ^{:private true} action-ids [:open-config
                                   :save-config
                                   :save-config-as
-                                  :run-simulation
-                                  :stuetz-count])
+                                  :run-simulation])
 
 (def ^{:private true} action-specs 
                       (map #(assoc %2 :action %1)
