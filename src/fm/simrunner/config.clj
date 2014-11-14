@@ -71,13 +71,19 @@
 (defn- trimmed [lines]
   (map #(-> % str .trim) lines))
 
-(defn config [map]
-  (reduce (fn [config param-id]
-            (if-let [value (value param-id (param-id map))]
-              (assoc config param-id value)
-              config))
-          {}
-          param-ids))
+(defn config
+  ([]
+    (config {}))
+  ([map]
+    (reduce (fn [config param-id]
+              (if-let [value (value param-id (param-id map))]
+                (assoc config param-id value)
+                config))
+            {}
+            param-ids)))
+
+(defn complete? [config]
+  (and config (every? config param-ids)))
 
 (defn read-config-lines [lines]
   (let [values (-> lines
