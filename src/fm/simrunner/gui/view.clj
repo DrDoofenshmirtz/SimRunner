@@ -32,26 +32,29 @@
                                  :calc-err
                                  :acsr-size])
 
-(def ^{:private true} input-specs (map #(assoc %2 :id %1)
-                                       input-ids
-                                       [{:type       :select
-                                         :label-text "Input File"}
-                                        {:type       :select
-                                         :label-text "Output File"}
-                                        {:type       :text
-                                         :label-text "EPS"}
-                                        {:type       :text
-                                         :label-text "Log Num"}
-                                        {:type       :text
-                                         :label-text "Stütz #"}
-                                        {:type       :text
-                                         :label-text "Correction"}
-                                        {:type       :text
-                                         :label-text "Max Deviation"}
-                                        {:type       :checkbox
-                                         :label-text "Calc Err"}
-                                        {:type       :text
-                                         :label-text "ACSR Size"}]))
+(def ^{:private true} input-specs 
+                      (map #(assoc %2 :id %1)
+                           input-ids
+                           [{:type       :select
+                             :label-text "Input File"
+                             :options    {:action :select-input-file}}
+                            {:type       :select
+                             :label-text "Output File"
+                             :options    {:action :select-output-file}}
+                            {:type       :text
+                             :label-text "EPS"}
+                            {:type       :text
+                             :label-text "Log Num"}
+                            {:type       :text
+                             :label-text "Stütz #"}
+                            {:type       :text
+                             :label-text "Correction"}
+                            {:type       :text
+                             :label-text "Max Deviation"}
+                            {:type       :checkbox
+                             :label-text "Calc Err"}
+                            {:type       :text
+                             :label-text "ACSR Size"}]))
 
 (def ^{:private true} action-ids [:open-config
                                   :save-config
@@ -114,15 +117,18 @@
                 (input-constraints row-index)))
     input))
 
+(defn- make-input [type id options]
+  (apply gui/input type :id id (apply concat options)))
+
 (defn- add-inputs 
   ([container specs]
     (add-inputs container (map #(assoc %1 :row-index %2) specs (range)) []))
   ([container specs inputs]
-    (if-let [{:keys [id type label-text row-index]} (first specs)]
+    (if-let [{:keys [id type label-text options row-index]} (first specs)]
       (recur container 
              (rest specs) 
              (conj inputs (add-input container 
-                                     (gui/input type :id id) 
+                                     (make-input type id options) 
                                      label-text 
                                      row-index)))
       inputs)))

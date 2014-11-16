@@ -36,14 +36,13 @@
                               (on-event :input-changed input))))))
 
 (defmethod wire-input :select-input [input on-event]
-  (let [select-text   (-> input :contents :select-text)
-        select-button (-> input :contents :select-button)]
-  (-> select-button
-      :widget
-      (.addActionListener (reify
-                            ActionListener
-                            (actionPerformed [this event]
-                              (on-event :input-changed input)))))))
+  (let [select-button (-> input :contents :select-button)]
+    (-> select-button
+        :widget
+        (.addActionListener (reify
+                              ActionListener
+                              (actionPerformed [this event]
+                                (on-event :action-performed input)))))))
 
 (defn- wire-button [button on-event]
   (-> button

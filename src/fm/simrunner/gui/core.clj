@@ -59,19 +59,23 @@
                          (.setColumns 16))]
     (make-widget :text-input text-field options)))
 
-(defmethod input :select [type & {:as options}]
-  (let [text-field    (doto (JTextField.)
+(defmethod input :select [type & {action :action :as options}]
+  (let [select-text   (doto (JTextField.)
                             (.setColumns 16)
                             (.setEditable false))
         select-button (doto (JButton. "...")
                             (.setToolTipText "Click to select"))
         panel         (doto (JPanel. (BorderLayout.))
-                            (.add text-field BorderLayout/CENTER)
+                            (.add select-text BorderLayout/CENTER)
                             (.add select-button BorderLayout/EAST))
-        contents      {:select-text   (widget :select-text text-field)
-                       :select-button (widget :select-button select-button)}
-        options       (assoc options :contents contents)]
-    (make-widget :select-input panel options)))
+        select-text   (widget :select-text select-text)
+        select-button (widget :select-button select-button)
+        contents      {:select-text select-text :select-button select-button}
+        options       (assoc options :contents contents)
+        input         (make-widget :select-input panel options)]
+    (if action
+      (vary-meta input assoc :action action)
+      input)))
 
 (defmethod input :checkbox [type & {:as options}]
   (let [checkbox (doto (JCheckBox.)

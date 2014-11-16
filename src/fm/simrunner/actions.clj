@@ -66,6 +66,42 @@
     (run-task app open-config widget file)
     (rdg/unlock! app)))  
 
+(defn- run-simulation [{app-state :state :as app} widget]
+  (let [{:keys [ui model] :as app-state} @app-state]
+    (if (and (-> ui :model :values :output-file) (:valid? model))
+      (rdg/unlock! app)
+      (gui/gui-do
+        (JOptionPane/showMessageDialog (:widget widget) 
+                                       "The simulation config is not valid." 
+                                       "Run Simulation" 
+                                       JOptionPane/WARNING_MESSAGE)
+        (rdg/unlock! app)))))
+
+(defmethod on-action :run-simulation [_ app & [widget]]
+  (run-task app run-simulation widget))
+
+(defn- select-input-file [{app-state :state :as app} widget]
+  (if-let [file (gui/choose-file (:widget widget) 
+                                 :title "Select Input File")]
+    (do
+      (swap! app-state #(assoc-in % [:ui :model :values :input-file] file))
+      (rdg/unlock! app))
+    (rdg/unlock! app)))
+
+(defmethod on-action :select-input-file [_ app & [widget]]
+  (select-input-file app widget))
+
+(defn- select-output-file [{app-state :state :as app} widget]
+  (if-let [file (gui/choose-file (:widget widget) 
+                                 :title "Select Output File")]
+    (do
+      (swap! app-state #(assoc-in % [:ui :model :values :output-file] file))
+      (rdg/unlock! app))
+    (rdg/unlock! app)))
+
+(defmethod on-action :select-output-file [_ app & [widget]]
+  (select-output-file app widget))
+
 (defmethod on-action :default [action app & args]
   (println (format "on-action{action: %s args: %s}" action args))
   (rdg/unlock! app))

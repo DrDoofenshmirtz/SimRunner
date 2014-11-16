@@ -32,8 +32,8 @@
 
 (defmulti on-event {:private true} (fn [_ event-id & _] event-id))
 
-(defmethod on-event :action-performed [app _ & [button :as args]]
-  (act/dispatch (-> button meta :action) app args))
+(defmethod on-event :action-performed [app _ & [widget :as args]]
+  (act/dispatch (-> widget meta :action) app args))
 
 (defmethod on-event :input-changed [app _ & args]
   (input-changed (-> args first meta :id) app args))
