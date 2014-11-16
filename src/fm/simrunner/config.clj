@@ -43,7 +43,7 @@
 
 (def ^{:private true} param-defs (zipmap param-ids param-specs))
 
-(defn- value [param-id value]
+(defn- param-value [param-id value]
   ((get-in param-defs [param-id :value]) value))
 
 (defn- blank? [trimmed-line]
@@ -76,7 +76,7 @@
     (config {}))
   ([map]
     (reduce (fn [config param-id]
-              (if-let [value (value param-id (param-id map))]
+              (if-let [value (param-value param-id (param-id map))]
                 (assoc config param-id value)
                 config))
             {}
@@ -95,4 +95,11 @@
 (defn read-config-file [file]
   (with-open [reader (jio/reader file)]
     (read-config-lines (line-seq reader))))
+
+(defn with-value [config param-id value]
+  (if-let [param-def (get param-defs param-id)]
+    (when-let [value (param-value param-id value)]
+      (assoc config param-id value))
+    (throw (IllegalArgumentException. 
+             (format "Undefined config parameter: '%s'!" param-id)))))
 
