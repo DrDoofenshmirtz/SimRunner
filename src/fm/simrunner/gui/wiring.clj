@@ -63,8 +63,9 @@
     (wire-input input on-event))
   view)
 
-(defn wire-up [view on-event]
-  (-> view
-      (wire-toolbar-buttons on-event)
-      (wire-inputs on-event)))
+(defn wire-up! [view on-event]
+  (io!
+    (-> view
+        (wire-toolbar-buttons on-event)
+        (wire-inputs on-event))))
 
