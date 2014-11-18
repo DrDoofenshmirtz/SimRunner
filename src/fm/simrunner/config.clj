@@ -103,6 +103,8 @@
     (throw (IllegalArgumentException. 
              (format "Undefined config parameter: '%s'!" param-id)))))
 
-;; TODO: implement.
-(defn write-config-file [config file])
+(defn write-config-file [config file]
+  (with-open [writer (jio/writer file)]
+    (doseq [value (map #(str (get config %)) param-ids)]
+      (doto writer (.write value) .newLine))))
 
