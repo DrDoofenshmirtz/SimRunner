@@ -106,5 +106,9 @@
 (defn write-config-file [config file]
   (with-open [writer (jio/writer file)]
     (doseq [value (map #(str (get config %)) param-ids)]
-      (doto writer (.write value) .newLine))))
+      (if (.isEmpty value)
+        (throw (IllegalArgumentException. "Missing or empty value in config!"))
+        (doto writer 
+          (.write value) 
+          .newLine)))))
 
