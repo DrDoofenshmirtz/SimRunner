@@ -103,3 +103,6 @@
     (throw (IllegalArgumentException. 
              (format "Undefined config parameter: '%s'!" param-id)))))
 
+;; TODO: implement.
+(defn write-config-file [config file])
+
