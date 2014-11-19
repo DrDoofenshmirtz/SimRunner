@@ -28,7 +28,7 @@
                   (.printStackTrace task-failed)
                   nil)))))
 
-(defmulti on-action (fn [action & _] action))
+(defmulti on-action {:private true} (fn [action & _] action))
 
 (defn- param->value [id value]
   (case id

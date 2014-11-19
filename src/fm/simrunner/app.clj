@@ -7,7 +7,8 @@
   fm.simrunner.app
   (:require
     [fm.simrunner (config :as cfg)
-                  (actions :as act)]
+                  (actions :as act)
+                  (input :as inp)]
     [fm.simrunner.gui (core :as gui) 
                       (view :as view) 
                       (wiring :as wrg)
@@ -16,27 +17,13 @@
   (:import 
     (javax.swing JOptionPane)))
 
-(defmulti on-input {:private true} (fn [id & _] id))
-
-(defmethod on-input :default [id app & args]
-  (println (format "on-input{id: %s args: %s}" id args)))
-
-(defn- handle-input? [{app-state :state}]
-  (let [{ui :ui} @app-state]
-    (and (not (:locked? ui))
-         (not (:rendering? ui)))))
-
-(defn- input-changed [id app args]
-  (when (handle-input? app)
-    (apply on-input id app args)))
-
 (defmulti on-event {:private true} (fn [_ event-id & _] event-id))
 
 (defmethod on-event :action-performed [app _ & [widget :as args]]
   (act/dispatch (-> widget meta :action) app args))
 
 (defmethod on-event :input-changed [app _ & args]
-  (input-changed (-> args first meta :id) app args))
+  (inp/dispatch (-> args first meta :id) app args))
 
 (defmethod on-event :default [app event-id & args]
   (println (format "on-event{id: %s args: %s}" event-id args)))
