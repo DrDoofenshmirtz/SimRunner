@@ -50,7 +50,7 @@
 (defn- param->value [id value]
   (case id
     (:input-file :output-file) (File. (str value))
-    :calc-err                  (boolean (#{"0" "1"} value))
+    :calc-err                  (= "1" value)
     (str value)))
 
 (defn- apply-params [values config]
