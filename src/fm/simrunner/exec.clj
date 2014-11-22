@@ -8,12 +8,18 @@
   (:require
     [clojure.java.io :as jio])
   (:import 
-    (java.io InputStream PrintWriter)))
+    (java.io PrintWriter)))
 
-(defn write-lines [^InputStream source ^PrintWriter target]
+(defn drain-lines [source drain]
   (with-open [reader (jio/reader source)]
     (doseq [line (line-seq reader)]
-      (.println target line))))
+      (drain line))))
+
+(defn- print-line [^PrintWriter target ^String line]
+  (.println target line))
+
+(defn write-lines [source ^PrintWriter target]
+  (drain-lines source (partial print-line target)))
 
 (defn out>-system-out [out]
   (write-lines out *out*))
@@ -29,5 +35,5 @@
               :or {out> out>-system-out err> err>-system-err}}]
   (future (out> (.getInputStream process)))
   (future (err> (.getErrorStream process)))
-  nil)
+  process)
 
