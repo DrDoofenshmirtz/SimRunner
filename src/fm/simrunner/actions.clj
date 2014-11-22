@@ -6,7 +6,8 @@
     :author "Frank Mosebach"}
   fm.simrunner.actions
   (:require 
-    [fm.simrunner.config :as cfg]
+    [fm.simrunner (config :as cfg)
+                  (exec :as exc)]
     [fm.simrunner.gui (core :as gui)
                       (rendering :as rdg)])
   (:import 
@@ -42,6 +43,18 @@
           (select-keys values [:output-file])
           config))
 
+(defn- read-config-file [app widget file]
+  (try
+    (cfg/read-config-file file)
+    (catch Exception read-error
+      (gui/gui-do
+        (JOptionPane/showMessageDialog (:widget widget) 
+                                       "Failed to read config file!" 
+                                       "Open Config" 
+                                       JOptionPane/ERROR_MESSAGE)
+        (rdg/unlock! app))
+      nil)))
+
 (defn- apply-config [app-state config file]
   (-> app-state
       (assoc :model {:config config :file file :changed? false :valid? true})
@@ -49,7 +62,7 @@
       (update-in [:ui :model :values] update-values config)))
 
 (defn- open-config [{app-state :state :as app} widget file]
-  (let [config (cfg/read-config-file file)]
+  (when-let [config (read-config-file app widget file)]
     (if (cfg/complete? config)
       (do
         (swap! app-state #(apply-config % config file))
@@ -66,16 +79,47 @@
     (run-task app open-config widget file)
     (rdg/unlock! app)))  
 
-(defn- run-simulation [{app-state :state :as app} widget]
-  (let [{:keys [ui model] :as app-state} @app-state]
-    (if (and (-> ui :model :values :output-file) (:valid? model))
-      (rdg/unlock! app)
-      (gui/gui-do
-        (JOptionPane/showMessageDialog (:widget widget) 
-                                       "The simulation config is not valid." 
-                                       "Run Simulation" 
-                                       JOptionPane/WARNING_MESSAGE)
-        (rdg/unlock! app)))))
+(defn- exec-args [{:keys [config state]}]
+  (let [{:keys [ui model]} @state
+        working-dir (:working-directory config)
+        config-file (:file model)
+        output-file (-> ui :model :values :output-file)]
+    (when (and (:valid? model) config-file output-file)
+      [(.getAbsolutePath (File. working-dir "bin/simrunner"))
+       (.getAbsolutePath config-file)
+       (.getAbsolutePath output-file)])))
+
+(defn- console-logger [app]
+  (fn [source]
+    (exc/drain-lines source (fn [line]
+                              (rdg/log-messages! app line)))))
+
+(defn- run-simulation [app widget]
+  (if-let [[_ config-file output-file :as args] (exec-args app)]
+    (do
+      (rdg/log-messages! app 
+                         "Starting simulation run."
+                         (format "Config file: '%s'" config-file)
+                         (format "Ouput file : '%s'" output-file))
+      (try
+        (.waitFor (exc/drain-outputs (apply exc/exec args) 
+                                     :out> (console-logger app)
+                                     :err> (console-logger app)))
+        (rdg/log-messages! app "Simulation run terminated.")
+        (rdg/unlock! app)
+        (catch Exception exec-error
+          (gui/gui-do
+            (JOptionPane/showMessageDialog (:widget widget) 
+                                           "The simulation run failed." 
+                                           "Run Simulation" 
+                                           JOptionPane/ERROR_MESSAGE)
+            (rdg/unlock! app)))))
+    (gui/gui-do
+      (JOptionPane/showMessageDialog (:widget widget) 
+                                     "The simulation config is not valid." 
+                                     "Run Simulation" 
+                                     JOptionPane/WARNING_MESSAGE)
+      (rdg/unlock! app))))
 
 (defmethod on-action :run-simulation [_ app & [widget]]
   (run-task app run-simulation widget))
