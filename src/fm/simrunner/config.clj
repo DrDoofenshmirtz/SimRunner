@@ -98,8 +98,9 @@
 
 (defn with-value [config param-id value]
   (if-let [param-def (get param-defs param-id)]
-    (when-let [value (param-value param-id value)]
-      (assoc config param-id value))
+    (if-let [value (param-value param-id value)]
+      (assoc config param-id value)
+      (dissoc config param-id))
     (throw (IllegalArgumentException. 
              (format "Undefined config parameter: '%s'!" param-id)))))
 
