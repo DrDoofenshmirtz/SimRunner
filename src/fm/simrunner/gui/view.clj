@@ -143,9 +143,9 @@
 
 (defn- console []
   (let [text-area   (doto (JTextArea.)
-                          (.setEditable false)
-                          (.setPreferredSize (Dimension. 0 150)))
-        scroll-pane (JScrollPane. text-area)]
+                          (.setEditable false))
+        scroll-pane (doto (JScrollPane. text-area)
+                          (.setPreferredSize (Dimension. 0 150)))]
     (gui/widget :console scroll-pane
                 :contents {:text-area (gui/widget :text-area text-area)})))
 
