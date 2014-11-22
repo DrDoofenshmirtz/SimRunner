@@ -135,7 +135,9 @@
 
 (defn add-messages [app-state messages]
   (if (seq messages)
-    (update-in app-state [:ui :model :messages] #(reduce conj % messages))
+    (-> app-state
+        (update-in [:ui :model :messages] #(reduce conj % messages))
+        (assoc-in [:ui :dirty?] true))
     app-state))
 
 (defn log-messages! [app & messages]
