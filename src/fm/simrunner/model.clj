@@ -29,14 +29,31 @@
           (assoc-in [:model :changed?] true)
           (assoc-in [:model :valid?] (cfg/complete? config))))))
 
+(defn- rule [& preds]
+  (partial map (fn [pred flag] (pred flag)) preds))
+
+(def ^{:private true} action-rules {:open-config    (rule (constantly true) 
+                                                          (constantly true) 
+                                                          (constantly true))
+                                    :save-config    (rule true? 
+                                                          true? 
+                                                          (constantly true))
+                                    :save-config-as (rule true? 
+                                                          (constantly true) 
+                                                          (constantly true))
+                                    :run-simulation (rule true? 
+                                                          false? 
+                                                          boolean)})
+
 (defn- update-actions [{:keys [ui model]:as app-state}]
-  (let [valid?   (:valid? model)
-        changed? (:changed? model)
-        actions  (case [valid? changed?]
-                   [false false] #{:open-config}
-                   [false  true] #{:open-config}
-                   [true  false] #{:open-config :save-config-as :run-simulation}
-                   #{:open-config :save-config :save-config-as})]
+  (let [rule-args [(:valid? model) 
+                   (:changed? model) 
+                   (-> ui :model :values :output-file)]
+        actions   (->> action-rules               
+                       (filter (fn [[action rule]]
+                                 (every? true? (rule rule-args))))
+                       (map first)
+                       (into #{}))]
     (-> app-state 
         (assoc-in [:ui :model :actions] actions)
         (assoc-in [:ui :dirty?] true))))
