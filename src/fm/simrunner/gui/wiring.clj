@@ -14,6 +14,9 @@
 
 (defmulti wire-input ^{:private true} (fn [input & _] (type input)))
 
+(defn- text-changed [input on-event]
+  (on-event :input-changed input (-> input :widget .getText)))
+
 (defmethod wire-input :text-input [input on-event]
   (-> input
       :widget
@@ -21,17 +24,11 @@
       (.addDocumentListener (reify 
                               DocumentListener
                               (insertUpdate [this event]
-                                (on-event :input-changed 
-                                          input 
-                                          (-> input :widget .getText)))
+                                (text-changed input on-event))
                               (removeUpdate [this event]
-                                (on-event :input-changed 
-                                          input 
-                                          (-> input :widget .getText)))
+                                (text-changed input on-event))                             
                               (changedUpdate [this event]
-                                (on-event :input-changed 
-                                          input 
-                                          (-> input :widget .getText)))))))
+                                (text-changed input on-event))))))
 
 (defmethod wire-input :checkbox-input [input on-event]
   (-> input
