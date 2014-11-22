@@ -6,7 +6,9 @@
     :author "Frank Mosebach"}
   fm.simrunner.model
   (:require
-    [fm.simrunner.config :as cfg]))
+    [fm.simrunner.config :as cfg])
+  (:import 
+    (java.io File)))
 
 (defn- value->param [id value]
   (case id
@@ -43,5 +45,26 @@
   (-> app-state
       (update-values id value)
       (update-config id value)
+      update-actions))
+
+(defn- param->value [id value]
+  (case id
+    (:input-file :output-file) (File. (str value))
+    :calc-err                  (boolean (#{"0" "1"} value))
+    (str value)))
+
+(defn- apply-params [values config]
+  (reduce (fn [values [id value]]
+            (assoc values id (param->value id value)))
+          (select-keys values [:output-file])
+          config))
+
+(defn apply-config [app-state config file]
+  (-> app-state
+      (assoc :model {:config   config 
+                     :file     file 
+                     :changed? false 
+                     :valid?   (cfg/complete? config)})
+      (update-in [:ui :model :values] apply-params config)
       update-actions))
 

@@ -7,17 +7,13 @@
   fm.simrunner.actions
   (:require 
     [fm.simrunner (config :as cfg)
+                  (model :as mod)
                   (exec :as exc)]
     [fm.simrunner.gui (core :as gui)
                       (rendering :as rdg)])
   (:import 
     (java.io File)
     (javax.swing JOptionPane)))
-
-(def ^{:private true} all-actions #{:open-config 
-                                    :save-config 
-                                    :save-config-as 
-                                    :run-simulation})
 
 (defn- run-task [{worker :worker :as app} task & args]
   (send-off worker 
@@ -31,18 +27,6 @@
 
 (defmulti on-action {:private true} (fn [action & _] action))
 
-(defn- param->value [id value]
-  (case id
-    (:input-file :output-file) (File. (str value))
-    :calc-err                  (boolean (#{"0" "1"} value))
-    (str value)))
-
-(defn- update-values [values config]
-  (reduce (fn [values [id value]]
-            (assoc values id (param->value id value)))
-          (select-keys values [:output-file])
-          config))
-
 (defn- read-config-file [app widget file]
   (try
     (cfg/read-config-file file)
@@ -55,17 +39,11 @@
         (rdg/unlock! app))
       nil)))
 
-(defn- apply-config [app-state config file]
-  (-> app-state
-      (assoc :model {:config config :file file :changed? false :valid? true})
-      (assoc-in [:ui :model :actions] all-actions)
-      (update-in [:ui :model :values] update-values config)))
-
 (defn- open-config [{app-state :state :as app} widget file]
   (when-let [config (read-config-file app widget file)]
     (if (cfg/complete? config)
       (do
-        (swap! app-state #(apply-config % config file))
+        (swap! app-state mod/apply-config config file)
         (rdg/unlock! app))
       (gui/gui-do
         (JOptionPane/showMessageDialog (:widget widget) 
@@ -77,6 +55,19 @@
 (defmethod on-action :open-config [_ app & [widget]]
   (if-let [file (gui/choose-file (:widget widget) :title "Open Config")]
     (run-task app open-config widget file)
+    (rdg/unlock! app)))  
+
+(defn- save-config [app widget file]
+  (rdg/unlock! app))
+
+(defmethod on-action :save-config [_ app & [widget]]
+  (if-let [file (-> app :state deref :model :file)] 
+    (run-task app save-config widget file)
+    (on-action :save-config-as app widget)))
+
+(defmethod on-action :save-config-as [_ app & [widget]]
+  (if-let [file (gui/choose-file (:widget widget) :title "Save Config As")]
+    (run-task app save-config widget file)
     (rdg/unlock! app)))  
 
 (defn- exec-args [{:keys [config state]}]
@@ -128,7 +119,7 @@
   (if-let [file (gui/choose-file (:widget widget) 
                                  :title "Select Input File")]
     (do
-      (swap! app-state #(assoc-in % [:ui :model :values :input-file] file))
+      (swap! app-state mod/update-value :input-file file)
       (rdg/unlock! app))
     (rdg/unlock! app)))
 
@@ -139,7 +130,7 @@
   (if-let [file (gui/choose-file (:widget widget) 
                                  :title "Select Output File")]
     (do
-      (swap! app-state #(assoc-in % [:ui :model :values :output-file] file))
+      (swap! app-state mod/update-value :output-file file)
       (rdg/unlock! app))
     (rdg/unlock! app)))
 
