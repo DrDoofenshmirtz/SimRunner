@@ -28,12 +28,17 @@
   (write-lines err *err*))
 
 (defn exec [path & args]
-  (.start (ProcessBuilder. (into-array (cons path args)))))
+  (let [process (.start (ProcessBuilder. (into-array (cons path args))))]
+    {:process process :result (delay (.waitFor process))}))
 
 (defn drain-outputs 
-  [process & {:keys [out> err>] 
-              :or {out> out>-system-out err> err>-system-err}}]
-  (future (out> (.getInputStream process)))
-  (future (err> (.getErrorStream process)))
-  process)
+  [{:keys [process result]} & {:keys [out> err>] 
+                               :or   {out> out>-system-out 
+                                      err> err>-system-err}}]
+  {:process process :result  (delay @(future (out> (.getInputStream process)))
+                                    @(future (err> (.getErrorStream process)))
+                                    @result)})
+
+(defn wait-for [{result :result}] 
+  @result)
 

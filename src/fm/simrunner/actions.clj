@@ -102,9 +102,9 @@
                          (format "Config file: '%s'" config-file)
                          (format "Ouput file : '%s'" output-file))
       (try
-        (.waitFor (exc/drain-outputs (apply exc/exec args) 
-                                     :out> (console-logger app)
-                                     :err> (console-logger app)))
+        (exc/wait-for (exc/drain-outputs (apply exc/exec args) 
+                                         :out> (console-logger app)
+                                         :err> (console-logger app)))
         (rdg/log-messages! app "Simulation run terminated.")
         (rdg/unlock! app)
         (catch Exception exec-error
