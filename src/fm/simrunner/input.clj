@@ -10,7 +10,7 @@
     [fm.simrunner.gui.rendering :as rdg]))
 
 (defn- on-input [id {app-state :state :as app} & [_ value]]
-  (swap! app-state mod/update id value) 
+  (swap! app-state mod/update-value id value) 
   (rdg/render! app))
 
 (defn- handle-input? [{app-state :state}]
