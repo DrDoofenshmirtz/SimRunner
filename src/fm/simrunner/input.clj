@@ -6,7 +6,8 @@
     :author "Frank Mosebach"}
   fm.simrunner.input
   (:require 
-    [fm.simrunner.config :as cfg]))
+    [fm.simrunner.config :as cfg]
+    [fm.simrunner.gui.rendering :as rdg]))
 
 (defn- value->param [id value]
   (if (= :calc-err id)
@@ -24,13 +25,26 @@
         (assoc-in [:model :changed?] true)
         (assoc-in [:model :valid?] (cfg/complete? config)))))
 
-(defn- on-input [id {app-state :state} & [widget value :as args]]
-  (println (format "on-input{id: %s value: %s}" id value))
+(defn- update-actions [{:keys [ui model]:as app-state}]
+  (let [valid?   (:valid? model)
+        changed? (:changed? model)
+        actions  (case [valid? changed?]
+                   [false false] #{:open-config}
+                   [false  true] #{:open-config}
+                   [true  false] #{:open-config :save-config-as :run-simulation}
+                   #{:open-config :save-config :save-config-as})]
+    (-> app-state 
+        (assoc-in [:ui :model :actions] actions)
+        (assoc-in [:ui :dirty?] true))))
+  
+(defn- on-input [id {app-state :state :as app} & [widget value :as args]]
   (swap! app-state 
          (fn [app-state]
            (-> app-state
                (update-values id value)
-               (update-config id value)))))
+               (update-config id value)
+               update-actions)))
+  (rdg/render! app))
 
 (defn- handle-input? [{app-state :state}]
   (let [{ui :ui} @app-state]
