@@ -111,5 +111,6 @@
         (throw (IllegalArgumentException. "Missing or empty value in config!"))
         (doto writer 
           (.write value) 
-          .newLine)))))
+          .newLine))))
+  config)
 
