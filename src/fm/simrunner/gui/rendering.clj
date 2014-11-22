@@ -38,12 +38,14 @@
                                       [(type input) (type value)]))
 
 (defmethod set-value [:select-input Object] [input value locked?]
-  (let [{:keys [select-text select-button]} (:contents input)]
-    (doto (:widget select-text)
-      (.setEnabled (not locked?))
-      (.setText (str value)))
-    (doto (:widget select-button)
-      (.setEnabled (not locked?)))))
+  (let [{:keys [select-text select-button]} (:contents input)
+        select-text   (:widget select-text)
+        select-button (:widget select-button)
+        value         (str value)]
+    (.setEnabled select-text (not locked?))
+    (.setEnabled select-button (not locked?))    
+    (when-not (= value (.getText select-text))
+      (.setText select-text value))))
 
 (defmethod set-value [:select-input File] [input value locked?]
   (set-value input (.getAbsolutePath value) locked?))
@@ -52,9 +54,11 @@
   (set-value input "" locked?))
 
 (defmethod set-value [:text-input Object] [input value locked?]
-  (doto (:widget input)
-    (.setEnabled (not locked?))
-    (.setText (str value))))
+  (let [input (:widget input)
+        value (str value)]
+    (.setEnabled input (not locked?))
+    (when-not (= value (.getText input))
+      (.setText input value))))
 
 (defmethod set-value [:text-input nil] [input value locked?]
   (set-value input "" locked?))
