@@ -21,11 +21,17 @@
       (.addDocumentListener (reify 
                               DocumentListener
                               (insertUpdate [this event]
-                                (on-event :input-changed input))
+                                (on-event :input-changed 
+                                          input 
+                                          (-> input :widget .getText)))
                               (removeUpdate [this event]
-                                (on-event :input-changed input))
+                                (on-event :input-changed 
+                                          input 
+                                          (-> input :widget .getText)))
                               (changedUpdate [this event]
-                                (on-event :input-changed input))))))
+                                (on-event :input-changed 
+                                          input 
+                                          (-> input :widget .getText)))))))
 
 (defmethod wire-input :checkbox-input [input on-event]
   (-> input
@@ -33,7 +39,9 @@
       (.addActionListener (reify
                             ActionListener
                             (actionPerformed [this event]
-                              (on-event :input-changed input))))))
+                              (on-event :input-changed 
+                                        input 
+                                        (-> input :widget .isSelected)))))))
 
 (defmethod wire-input :select-input [input on-event]
   (let [select-button (-> input :contents :select-button)]
