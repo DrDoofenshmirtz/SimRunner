@@ -21,7 +21,7 @@
       (catch NumberFormatException x))))
 
 (defn- boolean-value [value]
-  (#{"0" "1"} (value->string value)))
+  (get #{"0" "1"} (value->string value) "0"))
 
 (def param-ids [:input-file 
                 :eps 
