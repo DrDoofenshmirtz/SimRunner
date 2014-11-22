@@ -57,8 +57,24 @@
     (run-task app open-config widget file)
     (rdg/unlock! app)))  
 
-(defn- save-config [app widget file]
-  (rdg/unlock! app))
+(defn- write-config-file [app widget config file]
+  (try
+    (cfg/write-config-file config file)
+    (catch Exception read-error
+      (gui/gui-do
+        (JOptionPane/showMessageDialog (:widget widget) 
+                                       "Failed to read config file!" 
+                                       "Open Config" 
+                                       JOptionPane/ERROR_MESSAGE)
+        (rdg/unlock! app))
+      nil)))
+
+(defn- save-config [{app-state :state :as app} widget file]
+  (let [config (-> @app-state :model :config)
+        config (write-config-file app widget config file)]
+    (when config    
+      (swap! app-state mod/apply-config config file)
+      (rdg/unlock! app))))
 
 (defmethod on-action :save-config [_ app & [widget]]
   (if-let [file (-> app :state deref :model :file)] 
