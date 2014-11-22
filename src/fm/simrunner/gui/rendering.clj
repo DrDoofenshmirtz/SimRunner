@@ -133,3 +133,11 @@
 (defn unlock! [app]
   (render-app! app :before unlock))
 
+(defn add-messages [app-state messages]
+  (if (seq messages)
+    (update-in app-state [:ui :model :messages] conj messages)
+    app-state))
+
+(defn log-messages! [app & messages]
+  (render-app! app :before #(add-messages % messages)))
+
