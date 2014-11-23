@@ -15,6 +15,7 @@
                       (rendering :as rdg)]
     [fm.simrunner.actions :as act])
   (:import 
+    (java.io File)
     (javax.swing JOptionPane
                  JFrame)))
 
@@ -29,20 +30,27 @@
 (defmethod on-event :default [app event-id & args]
   (println (format "on-event{id: %s args: %s}" event-id args)))
 
-(defn- app [config view]
+(defn- app [{working-directory :working-directory :as config} view]
+  (let [working-directory (-> working-directory
+                              (or ".")
+                              File.
+                              .getAbsolutePath)
+        messages          ["SimRunner (c) 2014 DEINC started."
+                           (format "(Working directory: '%s')" 
+                                   working-directory)]]
     {:config config
      :worker (agent nil)
      :state  (atom {:ui    {:view       view
                             :model      {:actions  #{:open-config} 
                                          :values   {}
-                                         :messages ["SimRunner is ready."]}
+                                         :messages messages}
                             :locked?    false
                             :dirty?     true
                             :rendering? false}
                     :model {:config   (cfg/config)
                             :file     nil
                             :changed? false
-                            :valid?   false}})})
+                            :valid?   false}})}))
 
 (defn- event-handler [app]
   (fn [& args]
