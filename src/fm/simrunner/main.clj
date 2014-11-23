@@ -1,7 +1,7 @@
 (ns
   ^{:doc 
   
-  "Launcher for the SimRunner Application."
+  "Launcher for the SimRunner application."
   
     :author "Frank Mosebach"}
   fm.simrunner.main
@@ -10,13 +10,13 @@
   (:import 
     (java.io File)))
 
-(defn run [& args]
-  (let [[working-directory] args
-        working-directory   (-> (or ".")
-                                File.
-                                .getAbsolutePath)]
-    (app/start {:working-directory working-directory})))
+(defn run [& {:keys [stand-alone? working-directory] :or {stand-alone? false}}]
+  (let [working-directory (-> (or ".")
+                              File.
+                              .getAbsolutePath)]
+    (app/start {:working-directory working-directory 
+                :stand-alone?      stand-alone?})))
 
-(defn -main [& args]
-  (apply run args))
+(defn -main [& [working-directory]]
+  (run :working-directory working-directory :stand-alone? true))
 

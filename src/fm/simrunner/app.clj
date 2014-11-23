@@ -15,7 +15,8 @@
                       (rendering :as rdg)]
     [fm.simrunner.actions :as act])
   (:import 
-    (javax.swing JOptionPane)))
+    (javax.swing JOptionPane
+                 JFrame)))
 
 (defmulti on-event {:private true} (fn [_ event-id & _] event-id))
 
@@ -47,14 +48,20 @@
   (fn [& args]
     (apply on-event app args)))
 
-(defn start [config]
+(defn start [{stand-alone? :stand-alone? :as config}]
   @(gui/gui-do
-    (let [frame (view/simrunner-frame)
-          view  (-> frame :contents :simrunner-view)
-          frame (:widget frame)
-          app   (app config view)]
+    (let [frame    (view/simrunner-frame)
+          view     (-> frame :contents :simrunner-view)
+          frame    (:widget frame)
+          on-close (if stand-alone? 
+                     JFrame/EXIT_ON_CLOSE 
+                     JFrame/DISPOSE_ON_CLOSE)
+          app      (app config view)]
       (wrg/wire-up! view (event-handler app))
       (rdg/render! app)
-      (.setTitle frame "SimRunner (c) 2014 DEINC")
-      (.show frame))))
+      (doto frame
+        (.setDefaultCloseOperation on-close)
+        (.setTitle "SimRunner (c) 2014 DEINC")
+        .show)
+      app)))
 
