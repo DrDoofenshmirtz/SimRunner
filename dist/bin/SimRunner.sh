@@ -1,21 +1,24 @@
 #! /usr/bin/env sh
 
-if [ ! -d "$1" ]
+# Launcher script for the SimRunner application.
+#
+# This script expects to be located in the "bin" subdirectory of the
+# application's distribution. Consequently, the application's working
+# directory will point to this script's parent directory.
+
+WORKING_DIRECTORY=$0
+
+if [ -L $WORKING_DIRECTORY ]; 
 then
-  echo "Usage: SimRunner.sh working-directory"
-  
-  exit 85
+  WORKING_DIRECTORY=`readlink $0`  
 fi
 
-SCRIPT_HOME=$0
+WORKING_DIRECTORY=`dirname $WORKING_DIRECTORY`
+WORKING_DIRECTORY=`readlink -f $WORKING_DIRECTORY/..`
 
-if [ -L $SCRIPT_HOME ]; 
-then
-  SCRIPT_HOME=`readlink $0`  
-fi
+echo "Starting SimRunner (c) 2014 DEINC..."
+echo "(Working directory: $WORKING_DIRECTORY)"
 
-SCRIPT_HOME=`dirname $SCRIPT_HOME`
-
-java -server -Xms32m -Xmx48m -cp "${SCRIPT_HOME}/../lib/*" \
-fm.simrunner.Main "$1"
+java -server -Xms64m -Xmx128m -cp "${WORKING_DIRECTORY}/lib/*" \
+fm.simrunner.Main "$WORKING_DIRECTORY"
 
