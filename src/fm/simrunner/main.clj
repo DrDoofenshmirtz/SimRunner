@@ -5,14 +5,10 @@
   
     :author "Frank Mosebach"}
   fm.simrunner.main
-  (:gen-class
-    :name fm.simrunner.Main
-    :main true)
   (:require
     [fm.simrunner.app :as app])
   (:import 
     (java.io File)))
-
 
 (defn run [& args]
   (let [[working-directory] args
