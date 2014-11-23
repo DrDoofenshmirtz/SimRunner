@@ -11,7 +11,8 @@
     (java.io File)))
 
 (defn run [& {:keys [stand-alone? working-directory] :or {stand-alone? false}}]
-  (let [working-directory (-> (or ".")
+  (let [working-directory (-> working-directory
+                              (or ".")
                               File.
                               .getAbsolutePath)]
     (app/start {:working-directory working-directory 
