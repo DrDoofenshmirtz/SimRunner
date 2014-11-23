@@ -43,9 +43,9 @@
         select-button (:widget select-button)
         value         (str value)]
     (.setEnabled select-text (not locked?))
-    (.setEnabled select-button (not locked?))    
-    (when-not (= value (.getText select-text))
-      (.setText select-text value))))
+    (.setEnabled select-button (not locked?))
+    (.setText select-text value)
+    (.setToolTipText select-text value)))
 
 (defmethod set-value [:select-input File] [input value locked?]
   (set-value input (.getAbsolutePath value) locked?))
@@ -54,11 +54,9 @@
   (set-value input "" locked?))
 
 (defmethod set-value [:text-input Object] [input value locked?]
-  (let [input (:widget input)
-        value (str value)]
+  (let [input (:widget input)]
     (.setEnabled input (not locked?))
-    (when-not (= value (.getText input))
-      (.setText input value))))
+    (.setText input (str value))))
 
 (defmethod set-value [:text-input nil] [input value locked?]
   (set-value input "" locked?))
