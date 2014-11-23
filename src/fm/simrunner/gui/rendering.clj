@@ -45,7 +45,7 @@
     (.setEnabled select-text (not locked?))
     (.setEnabled select-button (not locked?))
     (.setText select-text value)
-    (.setToolTipText select-text value)))
+    (.setToolTipText select-text (when-not (.isEmpty value) value))))
 
 (defmethod set-value [:select-input File] [input value locked?]
   (set-value input (.getAbsolutePath value) locked?))
