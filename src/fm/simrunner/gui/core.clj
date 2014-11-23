@@ -12,9 +12,9 @@
                  JFrame 
                  JPanel
                  JButton
-                 JTextField
                  JCheckBox
-                 JFileChooser)))
+                 JFileChooser)
+    (fm.simrunner.gui TextField)))
 
 (defn gui-exec [task]
   (let [promise (promise)]
@@ -55,12 +55,12 @@
 (defmulti input (fn [type & _] type))
 
 (defmethod input :text [type & {:as options}]
-  (let [text-field (doto (JTextField.)
+  (let [text-field (doto (TextField.)
                          (.setColumns 16))]
     (make-widget :text-input text-field options)))
 
 (defmethod input :select [type & {action :action :as options}]
-  (let [select-text   (doto (JTextField.)
+  (let [select-text   (doto (TextField.)
                             (.setColumns 16)
                             (.setEditable false))
         select-button (doto (JButton. "...")
