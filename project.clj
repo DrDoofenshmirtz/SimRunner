@@ -6,9 +6,13 @@
   :jar-name "simrunner.jar"
   ; Include all Clojure source files when executing "lein jar". 
   :omit-source false
+  ; Omit all resources for now.
+  :resource-paths []
   :aot [fm.simrunner.main-class 
         fm.simrunner.gui.text-field]
   :jar-exclusions [#"(?:^|/).svn/" 
                    #"(?:^|/).git/"
-                   #"(?:^|/)project.clj"])
+                   #"(?:^|/)project.clj"
+                   #"(?:^|/)dist/"
+                   #"(?:^|/)resources/"])
 
