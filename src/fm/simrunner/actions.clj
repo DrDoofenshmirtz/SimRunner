@@ -102,12 +102,13 @@
                               (rdg/log-messages! app line)))))
 
 (defn- run-simulation [app widget]
-  (if-let [[_ config-file output-file :as args] (exec-args app)]
+  (if-let [[executable-file config-file output-file :as args] (exec-args app)]
     (do
       (rdg/log-messages! app 
                          "Starting simulation run."
-                         (format "Config file: '%s'" config-file)
-                         (format "Ouput file : '%s'" output-file))
+                         (format "Executable file: '%s'" executable-file)
+                         (format "Config file    : '%s'" config-file)
+                         (format "Ouput file     : '%s'" output-file))
       (try
         (exc/wait-for (exc/drain-outputs (apply exc/exec args) 
                                          :out> (console-logger app)
