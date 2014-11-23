@@ -12,5 +12,7 @@
 
 (defn -setText [this text]
   (when (not= (.getText this) text)
-    (.superSetText this text)))
+    (doto this
+      (.superSetText text)
+      (.setCaretPosition 0))))
 
