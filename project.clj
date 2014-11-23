@@ -1,4 +1,4 @@
-(defproject fm/simrunner "1.0.0-SNAPSHOT"
+(defproject fm/simrunner "1.0.0"
   :description "GUI Frontend for running Simulation Tasks."
   :dependencies [[org.clojure/clojure "1.6.0"]]
   ; Don't delete libraries when executing "lein deps".                
