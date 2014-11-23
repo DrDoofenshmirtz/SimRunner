@@ -10,14 +10,12 @@
   (:import
     (java.awt BorderLayout)
     (java.awt.event ActionListener)
-    (javax.swing SwingUtilities)
     (javax.swing.event DocumentListener)))
 
 (defmulti wire-input ^{:private true} (fn [input & _] (type input)))
 
 (defn- text-changed [input on-event]
-  (let [text (-> input :widget .getText)]
-    (SwingUtilities/invokeLater #(on-event :input-changed input text))))
+  (on-event :input-changed input (-> input :widget .getText)))
 
 (defmethod wire-input :text-input [input on-event]
   (-> input
