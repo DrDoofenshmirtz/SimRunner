@@ -16,8 +16,7 @@
     [fm.simrunner.actions :as act])
   (:import 
     (java.io File)
-    (javax.swing JOptionPane
-                 JFrame)))
+    (javax.swing JFrame)))
 
 (defmulti on-event {:private true} (fn [_ event-id & _] event-id))
 
