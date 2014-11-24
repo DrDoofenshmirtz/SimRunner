@@ -87,12 +87,12 @@
     (rdg/unlock! app)))  
 
 (defn- exec-args [{:keys [config state]}]
-  (let [{:keys [ui model]} @state
-        working-dir (:working-directory config)
+  (let [{:keys [working-directory simtask-name]} config
+        {:keys [ui model]} @state
         config-file (:file model)
         output-file (-> ui :model :values :output-file)]
     (when (and (:valid? model) config-file output-file)
-      [(.getAbsolutePath (File. working-dir "bin/simrunner"))
+      [(.getAbsolutePath (File. working-directory (str "bin/" simtask-name)))
        (.getAbsolutePath config-file)
        (.getAbsolutePath output-file)])))
 
