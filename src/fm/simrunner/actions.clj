@@ -107,8 +107,8 @@
       (rdg/log-messages! app 
                          "Starting simulation run."
                          (format "Executable file: '%s'" executable-file)
-                         (format "Config file    : '%s'" config-file)
-                         (format "Ouput file     : '%s'" output-file))
+                         (format "Config file: '%s'" config-file)
+                         (format "Ouput file: '%s'" output-file))
       (try
         (exc/wait-for (exc/drain-outputs (apply exc/exec args) 
                                          :out> (console-logger app)
