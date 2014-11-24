@@ -23,5 +23,7 @@ echo "(Working directory: ${WORKING_DIRECTORY})"
 java -server -Xms64m -Xmx128m \
 -cp "${WORKING_DIRECTORY}/lib/*" \
 -splash:"${WORKING_DIRECTORY}/resources/splash.jpg" \
-fm.simrunner.Main "${WORKING_DIRECTORY}")
+-Dfm.simrunner.working-directory="${WORKING_DIRECTORY}" \
+-Dfm.simrunner.simtask-name="simtask" \
+fm.simrunner.Main)
 
