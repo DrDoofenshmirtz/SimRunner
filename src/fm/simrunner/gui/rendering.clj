@@ -1,38 +1,34 @@
 (ns
   ^{:doc 
   
-  "Rendering the the SimRunner UI."
+  "Rendering the the SimRunner ui."
   
     :author "Frank Mosebach"}
   fm.simrunner.gui.rendering
   (:import 
     (java.io File))
   (:require 
-    [fm.simrunner.gui (core :as gui)
-                      (toc :as toc)]))
+    [fm.simrunner.gui (toc :as toc)
+                      (renderer :as rdr)]))
 
-(defn- start-rendering! [{app-state :state} before]
-  (swap! app-state before))
-
-(defn- stop-rendering! [{app-state :state} after]
-  (swap! app-state after))
-
-(defn- render-messages [{:keys [view model]}]
+(defn- render-messages [{:keys [view model] :as ui}]
   (let [console (toc/console view)
         console (-> console :contents :text-area :widget)]
     (doseq [message (:messages model)]
       (doto console
         (.append message)
-        (.append "\n")))))
+        (.append "\n")))
+    ui))
 
 (defn- update-button [button actions locked?]
   (let [action (-> button meta :action)]
     (doto (:widget button)
       (.setEnabled (boolean (and (not locked?) (actions action)))))))
 
-(defn- render-actions [{:keys [view model locked?]}]
+(defn- render-actions [{:keys [view model locked?]:as ui}]
   (doseq [button (toc/buttons view)]
-    (update-button button (:actions model) locked?)))
+    (update-button button (:actions model) locked?))
+  ui)
 
 (defmulti set-value {:private true} (fn [input value locked?] 
                                       [(type input) (type value)]))
@@ -74,74 +70,68 @@
         value (get values id)]    
     (set-value input value locked?)))
 
-(defn- render-values [{:keys [view model locked?]}]
+(defn- render-values [{:keys [view model locked?] :as ui}]
   (doseq [input (toc/inputs view)]
-    (update-input input (:values model) locked?)))
+    (update-input input (:values model) locked?))
+  ui)
 
 (defn- render-ui [ui]
-  (io! "Do not update the ui in a transaction!"
-    (render-messages ui)
-    (render-actions ui)
-    (render-values ui)))
+  (-> ui render-messages render-actions render-values))
 
-(defn- start-rendering [app-state]
-  (if (-> app-state :ui :dirty?)
-    (update-in app-state [:ui] assoc :rendering? true :dirty? false)
-    app-state))
+(defn- start-rendering [ui]
+  (if (:dirty? ui)
+    (assoc ui :rendering? true :dirty? false)
+    ui))
 
-(defn- before-rendering [before]
-  (if before
-    (comp start-rendering before)
-    start-rendering))
+(defn- begin [app-state tasks]
+ (update-in app-state [:ui] (apply comp start-rendering tasks)))
 
 (defn- drop-messages [messages rendered-messages]
   (into [] (drop (count rendered-messages) messages)))
 
-(defn- stop-rendering [app-state rendered-state]
-  (let [rendered-messages (-> rendered-state :ui :model :messages)]
-    (-> app-state
-        (assoc-in [:ui :rendering?] false)
-        (update-in [:ui :model :messages] drop-messages rendered-messages)))) 
+(defn- stop-rendering [app-ui rendered-ui]
+  (let [rendered-messages (get-in rendered-ui [:model :messages])]
+    (-> app-ui
+        (assoc :rendering? false)
+        (update-in [:model :messages] drop-messages rendered-messages)))) 
 
-(defn- after-rendering [after rendered-state]
-  (if after
-    (fn [app-state]
-      (after app-state rendered-state)
-      (stop-rendering app-state rendered-state))
-    (fn [app-state]
-      (stop-rendering app-state rendered-state))))
+(defn- end [app-state ui]
+  (update-in app-state [:ui] stop-rendering ui))
 
-(defn- render-app! [app & {:keys [before after]}]
-  (gui/gui-do
-    (let [app-state (start-rendering! app (before-rendering before))]
-      (when (-> app-state :ui :rendering?)
-        (try
-          (render-ui (:ui app-state))
-          (finally
-            (stop-rendering! app (after-rendering after app-state))))))))
+(deftype AppRenderCycle [app tasks]
+  rdr/RenderCycle
+  (rdr/begin [self _]
+    (:ui (swap! (:state app) begin tasks)))
+  (rdr/render [self ui]
+    (if (:rendering? ui)
+      (render-ui ui)
+      ui))
+  (rdr/end [self ui]
+    (swap! (:state app) end ui)
+    ui))
 
-(defn render! [app]
- (render-app! app))
+(defn render! [app & tasks]
+ (rdr/render! (AppRenderCycle. app tasks)))
 
-(defn lock [app-state]
-  (update-in app-state [:ui] assoc :dirty? true :locked? true))
+(defn lock [ui]
+  (assoc ui :dirty? true :locked? true))
 
 (defn lock! [app]
-  (render-app! app :before lock))
+  (render! app lock))
 
-(defn unlock [app-state]
-  (update-in app-state [:ui] assoc :dirty? true :locked? false))
+(defn unlock [ui]
+  (assoc ui :dirty? true :locked? false))
 
 (defn unlock! [app]
-  (render-app! app :before unlock))
+  (render! app unlock))
 
-(defn add-messages [app-state messages]
+(defn add-messages [ui messages]
   (if (seq messages)
-    (-> app-state
-        (update-in [:ui :model :messages] #(reduce conj % messages))
-        (assoc-in [:ui :dirty?] true))
-    app-state))
+    (-> ui
+        (update-in [:model :messages] #(reduce conj % messages))
+        (assoc :dirty? true))
+    ui))
 
 (defn log-messages! [app & messages]
-  (render-app! app :before #(add-messages % messages)))
+  (render! app #(add-messages % messages)))
 
