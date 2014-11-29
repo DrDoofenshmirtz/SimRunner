@@ -1,0 +1,80 @@
+#! /usr/bin/env python
+
+# A little Python script that mocks the behaviour of a simulation task.
+
+import sys, os
+
+def close_silently(file):
+    if file:
+        try:
+            file.close()
+        except:
+            pass
+
+def read_config_file(file_name, lines):
+    config_file = None
+    
+    try:
+        config_file = open(file_name, "r")
+        
+        for line in config_file:
+            lines.append(line)
+    except:
+        print "Failed to read config file '" + file_name + "'!"
+        
+        return False        
+    finally:
+        close_silently(config_file)
+        
+    return True
+
+def write_output_file(file_name, lines):
+    output_file = None
+    
+    try:
+        output_file = open(file_name + ".tmp", "w")
+        
+        for line in lines:
+            output_file.write(line)
+            output_file.write("\n")
+    except:
+        print "Failed to write output file '" + file_name + "'!"
+        
+        return False
+    finally:
+        close_silently(output_file)
+    
+    try:    
+        os.rename(file_name + ".tmp", file_name)
+    except:
+        print "Failed to write output file '" + file_name + "'!"
+        
+        return False
+    
+    return True
+
+def main(args):
+    if len(args) < 3:
+        print "Usage: simtask config-file output-file"
+        
+        return -1
+    
+    print "--- Simrunner (c) 2014 DEINC ---"
+    
+    _, config_file, output_file = args
+    
+    print "Config file: '" + config_file + "'"
+    print "Output file: '" + output_file + "'"
+    
+    lines = []
+    
+    if not read_config_file(config_file, lines):
+        return -1
+        
+    if not write_output_file(output_file, lines):
+        return -1
+    
+    return 0
+    
+main(sys.argv)
+
