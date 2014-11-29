@@ -36,7 +36,6 @@ def write_output_file(file_name, lines):
         
         for line in lines:
             output_file.write(line)
-            output_file.write("\n")
     except:
         print "Failed to write output file '" + file_name + "'!"
         
