@@ -12,17 +12,20 @@
 
 (def ^{:private true :const true} prop-key-prefix "fm.simrunner.")
 
-(def ^{:private true :const true} config-keys #{:working-directory 
+(def ^{:private true :const true} config-keys #{:app-title
+                                                :working-directory 
                                                 :simtask-name})
 
-(defn run [& {:keys [stand-alone? working-directory simtask-name]}]
+(defn run [& {:keys [stand-alone? app-title working-directory simtask-name]}]
   (let [stand-alone?      (boolean stand-alone?)
+        app-title         (str (or app-title "SimRunner (c) 2014 DEINC"))
         working-directory (-> working-directory
                               (or ".")
                               File.
                               .getAbsolutePath)
         simtask-name      (str (or simtask-name "simtask"))]
-    (app/start {:working-directory working-directory 
+    (app/start {:app-title         app-title
+                :working-directory working-directory 
                 :stand-alone?      stand-alone?
                 :simtask-name      simtask-name})))
 

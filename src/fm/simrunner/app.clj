@@ -29,12 +29,12 @@
 (defmethod on-event :default [app event-id & args]
   (println (format "on-event{id: %s args: %s}" event-id args)))
 
-(defn- app [{working-directory :working-directory :as config} view]
+(defn- app [{:keys [app-title working-directory] :as config} view]
   (let [working-directory (-> working-directory
                               (or ".")
                               File.
                               .getAbsolutePath)
-        messages          ["SimRunner (c) 2014 DEINC started."
+        messages          [(format "%s started." app-title)
                            (format "(Working directory: '%s')" 
                                    working-directory)]]
     {:config config
@@ -55,7 +55,7 @@
   (fn [& args]
     (apply on-event app args)))
 
-(defn start [{stand-alone? :stand-alone? :as config}]
+(defn start [{:keys [stand-alone? app-title] :as config}]
   @(gui/gui-do
     (let [frame    (view/simrunner-frame)
           view     (-> frame :contents :simrunner-view)
@@ -68,7 +68,7 @@
       (rdg/render! app)
       (doto frame
         (.setDefaultCloseOperation on-close)
-        (.setTitle "SimRunner (c) 2014 DEINC")
+        (.setTitle app-title)
         .show)
       app)))
 
