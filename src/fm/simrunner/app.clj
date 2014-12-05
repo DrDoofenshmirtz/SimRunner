@@ -56,11 +56,11 @@
           on-close (if stand-alone? 
                      JFrame/EXIT_ON_CLOSE 
                      JFrame/DISPOSE_ON_CLOSE)
-          wdir     (-> working-directory
+          wrkdir   (-> working-directory
                        (or ".")
                        File.
                        .getAbsolutePath)
-          config   (assoc config :working-directory wdir)
+          config   (assoc config :working-directory wrkdir)
           app      (app config view)]
       (wrg/wire-up! view (event-handler app))
       (rdg/render! app 
@@ -68,7 +68,7 @@
                    (rdg/console-logger (format "%s started." 
                                                app-title)
                                        (format "(Working directory: '%s')" 
-                                               wdir)))
+                                               wrkdir)))
       (doto frame
         (.setDefaultCloseOperation on-close)
         (.setTitle app-title)
