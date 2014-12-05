@@ -12,7 +12,8 @@
     [fm.simrunner.gui (core :as gui) 
                       (view :as view) 
                       (wiring :as wrg)
-                      (rendering :as rdg)]
+                      (rendering :as rdg)
+                      (task-buffer :as tbf)]
     [fm.simrunner.actions :as act])
   (:import 
     (java.io File)
@@ -30,32 +31,24 @@
   (println (format "on-event{id: %s args: %s}" event-id args)))
 
 (defn- app [{:keys [app-title working-directory] :as config} view]
-  (let [working-directory (-> working-directory
-                              (or ".")
-                              File.
-                              .getAbsolutePath)
-        messages          [(format "%s started." app-title)
-                           (format "(Working directory: '%s')" 
-                                   working-directory)]]
-    {:config config
-     :worker (agent nil)
-     :state  (atom {:ui    {:view       view
-                            :model      {:actions  #{:open-config} 
-                                         :values   {}
-                                         :messages messages}
-                            :locked?    false
-                            :dirty?     true
-                            :rendering? false}
-                    :model {:config   (cfg/config)
-                            :file     nil
-                            :changed? false
-                            :valid?   false}})}))
+  {:config config
+   :worker (agent nil)
+   :state  (atom {:ui    {:view         view
+                          :model        {:actions #{:open-config} 
+                                         :values  {}}
+                          :render-tasks (tbf/task-buffer)
+                          :rendering?   false
+                          :locked?      false}
+                  :model {:config   (cfg/config)
+                          :file     nil
+                          :changed? false
+                          :valid?   false}})})
 
 (defn- event-handler [app]
   (fn [& args]
     (apply on-event app args)))
 
-(defn start [{:keys [stand-alone? app-title] :as config}]
+(defn start [{:keys [stand-alone? app-title working-directory] :as config}]
   @(gui/gui-do
     (let [frame    (view/simrunner-frame)
           view     (-> frame :contents :simrunner-view)
@@ -63,9 +56,16 @@
           on-close (if stand-alone? 
                      JFrame/EXIT_ON_CLOSE 
                      JFrame/DISPOSE_ON_CLOSE)
-          app      (app config view)]
+          wdir     (-> working-directory
+                       (or ".")
+                       File.
+                       .getAbsolutePath)
+          config   (assoc config :working-directory wdir)
+          app      (app config view)
+          messages [(format "%s started." app-title)
+                    (format "(Working directory: '%s')" wdir)]]
       (wrg/wire-up! view (event-handler app))
-      (rdg/render! app)
+      (rdg/render! app rdg/render-ui (rdg/log-task messages))
       (doto frame
         (.setDefaultCloseOperation on-close)
         (.setTitle app-title)

@@ -11,7 +11,7 @@
 
 (defn- on-input [id {app-state :state :as app} & [_ value]]
   (swap! app-state mod/update-value id value) 
-  (rdg/render! app))
+  (rdg/render! app rdg/render-ui))
 
 (defn- handle-input? [{app-state :state}]
   (let [{ui :ui} @app-state]

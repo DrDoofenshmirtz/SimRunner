@@ -9,23 +9,75 @@
     (java.io File))
   (:require 
     [fm.simrunner.gui (toc :as toc)
-                      (renderer :as rdr)]))
+                      (renderer :as rdr)
+                      (task-buffer :as tbf)]))
 
-(defn- render-messages [{:keys [view model] :as ui}]
+(defn- start-rendering [{render-tasks :render-tasks :as ui} tasks]
+  (let [render-tasks (apply tbf/submit render-tasks tasks)
+        render-tasks (tbf/stage render-tasks)
+        staged       (tbf/staged render-tasks)]
+    (if (seq staged)
+      (assoc ui :render-tasks render-tasks :rendering? true)
+      ui)))
+
+(defn- begin [app-state tasks]
+ (update-in app-state [:ui] start-rendering tasks))
+
+(defn- render [{render-tasks :render-tasks :as ui}]
+  ((apply comp (reverse (tbf/staged render-tasks))) ui))
+
+(defn- drop-messages [messages rendered-messages]
+  (into [] (drop (count rendered-messages) messages)))
+
+(defn- stop-rendering [app-ui rendered-ui]
+  (let [rendered-messages (get-in rendered-ui [:model :messages])]
+    (-> app-ui
+        (assoc :rendering? false)
+        (update-in [:render-tasks] tbf/drain)
+        (update-in [:model :messages] drop-messages rendered-messages)))) 
+
+(defn- end [app-state ui]
+  (update-in app-state [:ui] stop-rendering ui))
+
+(deftype AppRenderCycle [app tasks]
+  rdr/RenderCycle
+  (rdr/begin [self _]
+    (:ui (swap! (:state app) begin tasks)))
+  (rdr/render [self ui]
+    (if (:rendering? ui)
+      (render ui)
+      ui))
+  (rdr/end [self ui]
+    (swap! (:state app) end ui)
+    ui))
+
+(defn render! [app & tasks]
+ (rdr/render! (AppRenderCycle. app tasks)))
+
+(defn lock [ui]
+  (assoc ui :locked? true))
+
+(defn unlock [ui]
+  (assoc ui :locked? false))
+
+(defn- render-messages [{view :view :as ui} messages]
   (let [console (toc/console view)
         console (-> console :contents :text-area :widget)]
-    (doseq [message (:messages model)]
+    (doseq [message messages]
       (doto console
         (.append message)
         (.append "\n")))
     ui))
+
+(defn log-task [messages]
+  #(render-messages % messages))
 
 (defn- update-button [button actions locked?]
   (let [action (-> button meta :action)]
     (doto (:widget button)
       (.setEnabled (boolean (and (not locked?) (actions action)))))))
 
-(defn- render-actions [{:keys [view model locked?]:as ui}]
+(defn render-actions [{:keys [view model locked?]:as ui}]
   (doseq [button (toc/buttons view)]
     (update-button button (:actions model) locked?))
   ui)
@@ -70,68 +122,11 @@
         value (get values id)]    
     (set-value input value locked?)))
 
-(defn- render-values [{:keys [view model locked?] :as ui}]
+(defn render-values [{:keys [view model locked?] :as ui}]
   (doseq [input (toc/inputs view)]
     (update-input input (:values model) locked?))
   ui)
 
-(defn- render-ui [ui]
-  (-> ui render-messages render-actions render-values))
-
-(defn- start-rendering [ui]
-  (if (:dirty? ui)
-    (assoc ui :rendering? true :dirty? false)
-    ui))
-
-(defn- begin [app-state tasks]
- (update-in app-state [:ui] (apply comp start-rendering tasks)))
-
-(defn- drop-messages [messages rendered-messages]
-  (into [] (drop (count rendered-messages) messages)))
-
-(defn- stop-rendering [app-ui rendered-ui]
-  (let [rendered-messages (get-in rendered-ui [:model :messages])]
-    (-> app-ui
-        (assoc :rendering? false)
-        (update-in [:model :messages] drop-messages rendered-messages)))) 
-
-(defn- end [app-state ui]
-  (update-in app-state [:ui] stop-rendering ui))
-
-(deftype AppRenderCycle [app tasks]
-  rdr/RenderCycle
-  (rdr/begin [self _]
-    (:ui (swap! (:state app) begin tasks)))
-  (rdr/render [self ui]
-    (if (:rendering? ui)
-      (render-ui ui)
-      ui))
-  (rdr/end [self ui]
-    (swap! (:state app) end ui)
-    ui))
-
-(defn render! [app & tasks]
- (rdr/render! (AppRenderCycle. app tasks)))
-
-(defn lock [ui]
-  (assoc ui :dirty? true :locked? true))
-
-(defn lock! [app]
-  (render! app lock))
-
-(defn unlock [ui]
-  (assoc ui :dirty? true :locked? false))
-
-(defn unlock! [app]
-  (render! app unlock))
-
-(defn add-messages [ui messages]
-  (if (seq messages)
-    (-> ui
-        (update-in [:model :messages] #(reduce conj % messages))
-        (assoc :dirty? true))
-    ui))
-
-(defn log-messages! [app & messages]
-  (render! app #(add-messages % messages)))
+(defn render-ui [ui]
+  (-> ui render-actions render-values))
 

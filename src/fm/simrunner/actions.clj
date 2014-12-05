@@ -36,7 +36,7 @@
                                        "Failed to read config file!" 
                                        "Open Config" 
                                        JOptionPane/ERROR_MESSAGE)
-        (rdg/unlock! app))
+        (rdg/render! app rdg/unlock rdg/render-ui))
       nil)))
 
 (defn- open-config [{app-state :state :as app} widget file]
@@ -44,18 +44,18 @@
     (if (cfg/complete? config)
       (do
         (swap! app-state mod/apply-config config file)
-        (rdg/unlock! app))
+        (rdg/render! app rdg/unlock rdg/render-ui))
       (gui/gui-do
         (JOptionPane/showMessageDialog (:widget widget) 
                                        "The selected config file is not valid." 
                                        "Open Config" 
                                        JOptionPane/ERROR_MESSAGE)
-        (rdg/unlock! app)))))
+        (rdg/render! app rdg/unlock rdg/render-ui)))))
 
 (defmethod on-action :open-config [_ app & [widget]]
   (if-let [file (gui/choose-file (:widget widget) :title "Open Config")]
     (run-task app open-config widget file)
-    (rdg/unlock! app)))  
+    (rdg/render! app rdg/unlock rdg/render-ui)))  
 
 (defn- write-config-file [app widget config file]
   (try
@@ -66,7 +66,7 @@
                                        "Failed to read config file!" 
                                        "Open Config" 
                                        JOptionPane/ERROR_MESSAGE)
-        (rdg/unlock! app))
+        (rdg/render! app rdg/unlock rdg/render-ui))
       nil)))
 
 (defn- save-config [{app-state :state :as app} widget file]
@@ -74,7 +74,7 @@
         config (write-config-file app widget config file)]
     (when config    
       (swap! app-state mod/apply-config config file)
-      (rdg/unlock! app))))
+      (rdg/render! app rdg/unlock rdg/render-ui))))
 
 (defmethod on-action :save-config [_ app & [widget]]
   (if-let [file (-> app :state deref :model :file)] 
@@ -84,7 +84,7 @@
 (defmethod on-action :save-config-as [_ app & [widget]]
   (if-let [file (gui/choose-file (:widget widget) :title "Save Config As")]
     (run-task app save-config widget file)
-    (rdg/unlock! app)))  
+    (rdg/render! app rdg/unlock rdg/render-ui)))  
 
 (defn- exec-args [{:keys [config state]}]
   (let [{:keys [working-directory simtask-name]} config
@@ -99,35 +99,38 @@
 (defn- console-logger [app]
   (fn [source]
     (exc/drain-lines source (fn [line]
-                              (rdg/log-messages! app line)))))
+                              (rdg/render! app (rdg/log-task [line]))))))
 
 (defn- run-simulation [app widget]
   (if-let [[executable-file config-file output-file :as args] (exec-args app)]
     (do
-      (rdg/log-messages! app 
-                         "Starting simulation run."
-                         (format "Executable file: '%s'" executable-file)
-                         (format "Config file: '%s'" config-file)
-                         (format "Ouput file: '%s'" output-file))
+      (rdg/render! app 
+                   (rdg/log-task ["Starting simulation run."
+                                  (format "Executable file: '%s'" 
+                                          executable-file)
+                                  (format "Config file: '%s'" config-file)
+                                  (format "Ouput file: '%s'" output-file)]))
       (try
         (exc/wait-for (exc/drain-outputs (apply exc/exec args) 
                                          :out> (console-logger app)
                                          :err> (console-logger app)))
-        (rdg/log-messages! app "Simulation run terminated.")
-        (rdg/unlock! app)
+        (rdg/render! app 
+                     (rdg/log-task ["Simulation run terminated."]) 
+                     rdg/unlock
+                     rdg/render-ui)
         (catch Exception exec-error
           (gui/gui-do
             (JOptionPane/showMessageDialog (:widget widget) 
                                            "The simulation run failed." 
                                            "Run Simulation" 
                                            JOptionPane/ERROR_MESSAGE)
-            (rdg/unlock! app)))))
+            (rdg/render! app rdg/unlock rdg/render-ui)))))
     (gui/gui-do
       (JOptionPane/showMessageDialog (:widget widget) 
                                      "The simulation config is not valid." 
                                      "Run Simulation" 
                                      JOptionPane/WARNING_MESSAGE)
-      (rdg/unlock! app))))
+      (rdg/render! app rdg/unlock rdg/render-ui))))
 
 (defmethod on-action :run-simulation [_ app & [widget]]
   (run-task app run-simulation widget))
@@ -137,8 +140,8 @@
                                  :title "Select Input File")]
     (do
       (swap! app-state mod/update-value :input-file file)
-      (rdg/unlock! app))
-    (rdg/unlock! app)))
+      (rdg/render! app rdg/unlock rdg/render-ui))
+    (rdg/render! app rdg/unlock rdg/render-ui)))
 
 (defmethod on-action :select-input-file [_ app & [widget]]
   (select-input-file app widget))
@@ -148,18 +151,14 @@
                                  :title "Select Output File")]
     (do
       (swap! app-state mod/update-value :output-file file)
-      (rdg/unlock! app))
-    (rdg/unlock! app)))
+      (rdg/render! app rdg/unlock rdg/render-ui))
+    (rdg/render! app rdg/unlock rdg/render-ui)))
 
 (defmethod on-action :select-output-file [_ app & [widget]]
   (select-output-file app widget))
 
-(defmethod on-action :default [action app & args]
-  (println (format "on-action{action: %s args: %s}" action args))
-  (rdg/unlock! app))
-
 (defn dispatch [action {app-state :state :as app} args]
   (when-not (-> @app-state :ui :locked?)
-    (rdg/lock! app)
+    (rdg/render! app rdg/lock rdg/render-ui)
     (apply on-action action app args)))
 
