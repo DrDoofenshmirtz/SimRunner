@@ -99,23 +99,23 @@
 (defn- console-logger [app]
   (fn [source]
     (exc/drain-lines source (fn [line]
-                              (rdg/render! app (rdg/log-task [line]))))))
+                              (rdg/render! app (rdg/console-logger line))))))
 
 (defn- run-simulation [app widget]
   (if-let [[executable-file config-file output-file :as args] (exec-args app)]
     (do
       (rdg/render! app 
-                   (rdg/log-task ["Starting simulation run."
-                                  (format "Executable file: '%s'" 
-                                          executable-file)
-                                  (format "Config file: '%s'" config-file)
-                                  (format "Ouput file: '%s'" output-file)]))
+                   (rdg/console-logger "Starting simulation run."
+                                       (format "Executable file: '%s'" 
+                                               executable-file)
+                                       (format "Config file: '%s'" config-file)
+                                       (format "Ouput file: '%s'" output-file)))
       (try
         (exc/wait-for (exc/drain-outputs (apply exc/exec args) 
                                          :out> (console-logger app)
                                          :err> (console-logger app)))
         (rdg/render! app 
-                     (rdg/log-task ["Simulation run terminated."]) 
+                     (rdg/console-logger "Simulation run terminated.") 
                      rdg/unlock
                      rdg/render-ui)
         (catch Exception exec-error

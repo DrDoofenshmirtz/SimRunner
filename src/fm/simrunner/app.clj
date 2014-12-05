@@ -61,11 +61,14 @@
                        File.
                        .getAbsolutePath)
           config   (assoc config :working-directory wdir)
-          app      (app config view)
-          messages [(format "%s started." app-title)
-                    (format "(Working directory: '%s')" wdir)]]
+          app      (app config view)]
       (wrg/wire-up! view (event-handler app))
-      (rdg/render! app rdg/render-ui (rdg/log-task messages))
+      (rdg/render! app 
+                   rdg/render-ui 
+                   (rdg/console-logger (format "%s started." 
+                                               app-title)
+                                       (format "(Working directory: '%s')" 
+                                               wdir)))
       (doto frame
         (.setDefaultCloseOperation on-close)
         (.setTitle app-title)

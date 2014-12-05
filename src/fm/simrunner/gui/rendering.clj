@@ -69,8 +69,8 @@
         (.append "\n")))
     ui))
 
-(defn log-task [messages]
-  #(render-messages % messages))
+(defn console-logger [message & messages]
+  #(render-messages % (cons message messages)))
 
 (defn- update-button [button actions locked?]
   (let [action (-> button meta :action)]
