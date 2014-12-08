@@ -27,9 +27,6 @@
 (defmethod on-event :input-changed [app _ & args]
   (inp/dispatch (-> args first meta :id) app args))
 
-(defmethod on-event :default [app event-id & args]
-  (println (format "on-event{id: %s args: %s}" event-id args)))
-
 (defn- app [config view]
   {:config config
    :worker (agent nil)
