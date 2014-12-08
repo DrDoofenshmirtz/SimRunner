@@ -30,7 +30,7 @@
 (defmethod on-event :default [app event-id & args]
   (println (format "on-event{id: %s args: %s}" event-id args)))
 
-(defn- app [{:keys [app-title working-directory] :as config} view]
+(defn- app [config view]
   {:config config
    :worker (agent nil)
    :state  (atom {:ui    {:view         view
