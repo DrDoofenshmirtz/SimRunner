@@ -26,15 +26,8 @@
 (defn- render [{render-tasks :render-tasks :as ui}]
   ((apply comp (reverse (tbf/staged render-tasks))) ui))
 
-(defn- drop-messages [messages rendered-messages]
-  (into [] (drop (count rendered-messages) messages)))
-
 (defn- stop-rendering [app-ui rendered-ui]
-  (let [rendered-messages (get-in rendered-ui [:model :messages])]
-    (-> app-ui
-        (assoc :rendering? false)
-        (update-in [:render-tasks] tbf/drain)
-        (update-in [:model :messages] drop-messages rendered-messages)))) 
+  (update-in app-ui [:render-tasks] tbf/drain)) 
 
 (defn- end [app-state ui]
   (update-in app-state [:ui] stop-rendering ui))
