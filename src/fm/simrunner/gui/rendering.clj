@@ -15,11 +15,8 @@
 
 (defn- start-rendering [{render-tasks :render-tasks :as ui} tasks]
   (let [render-tasks (apply tbf/submit render-tasks tasks)
-        render-tasks (tbf/stage render-tasks)
-        staged       (tbf/staged render-tasks)]
-    (if (seq staged)
-      (assoc ui :render-tasks render-tasks :rendering? true)
-      ui)))
+        render-tasks (tbf/stage render-tasks)]
+    (assoc ui :render-tasks render-tasks)))
 
 (defn- begin [app-state tasks]
  (update-in app-state [:ui] start-rendering tasks))
@@ -39,7 +36,7 @@
   (rdr/begin [self _]
     (:ui (swap! (:state app) begin tasks)))
   (rdr/render [self ui]
-    (if (:rendering? ui)
+    (when (seq (tbf/staged (:render-tasks ui)))
       (render ui)
       ui))
   (rdr/end [self ui]
