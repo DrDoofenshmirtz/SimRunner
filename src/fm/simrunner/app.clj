@@ -10,7 +10,7 @@
                   (actions :as act)
                   (input :as inp)]
     [fm.simrunner.gui (core :as gui) 
-                      (view :as view) 
+                      (view :as viw) 
                       (wiring :as wrg)
                       (rendering :as rdg)
                       (task-buffer :as tbf)]
@@ -27,11 +27,10 @@
 (defmethod on-event :input-changed [app _ & args]
   (inp/dispatch (-> args first meta :id) app args))
 
-(defn- app [config view]
+(defn- app [config]
   {:config config
    :worker (agent nil)
-   :state  (atom {:ui    {:view         view
-                          :model        {:actions #{:open-config} 
+   :state  (atom {:ui    {:model        {:actions #{:open-config} 
                                          :values  {}}
                           :render-tasks (tbf/task-buffer)
                           :rendering?   false
@@ -45,30 +44,41 @@
   (fn [& args]
     (apply on-event app args)))
 
+(defn- view [event-handler]
+  (wrg/wire-up! (viw/simrunner-view) event-handler))
+
+(defn- frame [view app-title stand-alone?]
+  (let [frame (assoc (gui/frame) :contents {:simrunner-view view})
+        frame (:widget frame)
+        view  (:widget view)]    
+    (.add (.getContentPane frame) view)
+    (doto frame
+      (.setTitle app-title)
+      (.setDefaultCloseOperation (if stand-alone? 
+                                   JFrame/EXIT_ON_CLOSE 
+                                   JFrame/DISPOSE_ON_CLOSE)))))
+
+(defn- with-view [app view]
+  (swap! (:state app) assoc-in [:ui :view] view)
+  app)
+
 (defn start [{:keys [stand-alone? app-title working-directory] :as config}]
   @(gui/gui-do
-    (let [frame    (view/simrunner-frame)
-          view     (-> frame :contents :simrunner-view)
-          frame    (:widget frame)
-          on-close (if stand-alone? 
-                     JFrame/EXIT_ON_CLOSE 
-                     JFrame/DISPOSE_ON_CLOSE)
-          wrkdir   (-> working-directory
-                       (or ".")
-                       File.
-                       .getAbsolutePath)
-          config   (assoc config :working-directory wrkdir)
-          app      (app config view)]
-      (wrg/wire-up! view (event-handler app))
+    (let [wrkdir (-> working-directory
+                     (or ".")
+                     File.
+                     .getAbsolutePath)
+          config (assoc config :working-directory wrkdir)
+          app    (app config)
+          view   (view (event-handler app))
+          frame  (frame view app-title stand-alone?)
+          app    (with-view app view)]
       (rdg/render! app 
                    rdg/render-ui 
                    (rdg/console-logger (format "%s started." 
                                                app-title)
                                        (format "(Working directory: '%s')" 
                                                wrkdir)))
-      (doto frame
-        (.setDefaultCloseOperation on-close)
-        (.setTitle app-title)
-        .show)
+      (.show frame)
       app)))
 
