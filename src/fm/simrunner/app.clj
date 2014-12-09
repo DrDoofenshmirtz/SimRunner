@@ -24,8 +24,8 @@
 (defmethod on-event :action-performed [app _ & [widget :as args]]
   (act/dispatch (-> widget meta :action) app args))
 
-(defmethod on-event :input-changed [app _ & args]
-  (inp/dispatch (-> args first meta :id) app args))
+(defmethod on-event :input-changed [app _ & [widget :as args]]
+  (inp/dispatch (-> widget meta :id) app args))
 
 (defn- app [config]
   {:config config
