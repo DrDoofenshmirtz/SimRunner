@@ -14,9 +14,7 @@
   (rdg/render! app rdg/render-ui))
 
 (defn- handle-input? [{app-state :state}]
-  (let [{ui :ui} @app-state]
-    (and (not (:locked? ui))
-         (not (:rendering? ui)))))
+  (not (:locked? (:ui @app-state))))
 
 (defn dispatch [id app args]
   (when (handle-input? app)

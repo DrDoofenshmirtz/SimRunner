@@ -33,7 +33,6 @@
    :state  (atom {:ui    {:model        {:actions #{:open-config} 
                                          :values  {}}
                           :render-tasks (tbf/task-buffer)
-                          :rendering?   false
                           :locked?      false}
                   :model {:config   (cfg/config)
                           :file     nil
