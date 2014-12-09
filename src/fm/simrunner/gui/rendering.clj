@@ -9,6 +9,7 @@
     (java.io File))
   (:require 
     [fm.simrunner.gui (toc :as toc)
+                      (wiring :as wrg)
                       (renderer :as rdr)
                       (task-buffer :as tbf)]))
 
@@ -24,7 +25,8 @@
  (update-in app-state [:ui] start-rendering tasks))
 
 (defn- render [{render-tasks :render-tasks :as ui}]
-  ((apply comp (reverse (tbf/staged render-tasks))) ui))
+  (wrg/do-unwired (:view ui)
+    ((apply comp (reverse (tbf/staged render-tasks))) ui)))
 
 (defn- stop-rendering [app-ui rendered-ui]
   (update-in app-ui [:render-tasks] tbf/drain)) 
