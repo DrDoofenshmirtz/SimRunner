@@ -78,3 +78,14 @@
           (wire-inputs on-event)
           (vary-meta assoc ::wiring {:wired? wired?})))))
 
+(defn wiring [view]
+  (-> view meta ::wiring))
+
+(defmacro do-unwired [view & body]
+ `(let [wired?# (:wired? (wiring ~view))]
+    (reset! wired?# false)
+    (try
+      ~@body
+      (finally
+        (reset! wired?# true)))))
+
