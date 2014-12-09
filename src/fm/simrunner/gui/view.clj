@@ -162,13 +162,3 @@
                                          :config-editor config-editor
                                          :console       console}))))
 
-(defn simrunner-frame [& {:as options}]
-  (let [options (apply concat options)
-        frame   (apply gui/frame options)
-        view    (simrunner-view)]
-    (-> frame
-        :widget
-        .getContentPane 
-        (.add (:widget view)))
-    (assoc frame :contents {:simrunner-view view})))
-
