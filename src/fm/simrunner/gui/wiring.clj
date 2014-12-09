@@ -68,8 +68,13 @@
   view)
 
 (defn wire-up! [view on-event]
-  (io!
-    (-> view
-        (wire-toolbar-buttons on-event)
-        (wire-inputs on-event))))
+  (io! "Do not wire-up a view in a transaction!"
+    (let [wired?   (atom true)
+          on-event (fn [& args]
+                     (when @wired?
+                       (apply on-event args)))]
+      (-> view
+          (wire-toolbar-buttons on-event)
+          (wire-inputs on-event)
+          (vary-meta assoc ::wiring {:wired? wired?})))))
 
