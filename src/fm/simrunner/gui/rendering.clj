@@ -25,8 +25,10 @@
   (wrg/do-unwired (:view ui)
     ((apply comp (reverse (tbf/staged render-tasks))) ui)))
 
-(defn- stop-rendering [app-ui rendered-ui]
-  (update-in app-ui [:render-tasks] tbf/drain)) 
+(defn- stop-rendering [ui {locked? :locked?}]
+  (-> ui
+      (update-in [:render-tasks] tbf/drain)
+      (assoc :locked? locked?)))
 
 (defn- end [app-state ui]
   (update-in app-state [:ui] stop-rendering ui))
@@ -36,7 +38,7 @@
   (rdr/begin [self _]
     (:ui (swap! (:state app) begin tasks)))
   (rdr/render [self ui]
-    (when (seq (tbf/staged (:render-tasks ui)))
+    (if (seq (tbf/staged (:render-tasks ui)))
       (render ui)
       ui))
   (rdr/end [self ui]
@@ -47,10 +49,10 @@
  (rdr/render! (AppRenderCycle. app tasks)))
 
 (defn lock [ui]
-  (assoc ui :locked? true))
+  (update-in ui [:locked?] #(inc (or % 0))))
 
 (defn unlock [ui]
-  (assoc ui :locked? false))
+  (update-in ui [:locked?] #(when (> (or % 0) 1) (dec %))))
 
 (defn- render-messages [{view :view :as ui} messages]
   (let [console (toc/console view)
