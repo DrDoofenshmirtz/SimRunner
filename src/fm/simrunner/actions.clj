@@ -159,6 +159,6 @@
 
 (defn dispatch [action {app-state :state :as app} args]
   (when-not (-> @app-state :ui :locked?)
-    (rdg/render! app rdg/lock rdg/render-ui)
+    @(rdg/render! app rdg/lock rdg/render-ui)
     (apply on-action action app args)))
 
